@@ -43,33 +43,62 @@ def move_batch_transforms_to_device(batch_transforms, device):
                 transforms[transform_name] = transforms[transform_name].to(device)
 
 
-def get_dataloaders(config, device):
+def _resolve_partitions(config, partitions=None):
     """
-    Create dataloaders for each of the dataset partitions.
-    Also creates instance and batch transforms.
+    Resolve dataset partitions requested by the caller.
 
     Args:
         config (DictConfig): hydra experiment config.
-        device (str): device to use for batch transforms.
+        partitions (Iterable[str] | None): requested partitions. If None,
+            use all dataset partitions defined in the config.
     Returns:
-        dataloaders (dict[DataLoader]): dict containing dataloader for a
-            partition defined by key.
-        batch_transforms (dict[Callable] | None): transforms that
-            should be applied on the whole batch. Depend on the
-            tensor name.
+        list[str]: partitions in a stable order.
     """
-    # transforms or augmentations init
-    batch_transforms = instantiate(config.transforms.batch_transforms)
-    move_batch_transforms_to_device(batch_transforms, device)
+    available_partitions = list(config.datasets.keys())
+    if partitions is None:
+        return available_partitions
 
-    # dataset partitions init
-    datasets = instantiate(config.datasets)  # instance transforms are defined inside
+    resolved = []
+    for partition in partitions:
+        if partition not in config.datasets:
+            raise KeyError(
+                f"Unknown dataset partition {partition!r}. "
+                f"Available partitions: {available_partitions}."
+            )
+        if partition not in resolved:
+            resolved.append(partition)
+    return resolved
 
-    # dataloaders init
+
+def build_datasets(config, partitions=None):
+    """
+    Instantiate only the requested dataset partitions.
+
+    Args:
+        config (DictConfig): hydra experiment config.
+        partitions (Iterable[str] | None): requested dataset partitions.
+    Returns:
+        dict[str, Dataset]: instantiated datasets keyed by partition.
+    """
+    resolved_partitions = _resolve_partitions(config, partitions)
+    return {
+        partition: instantiate(config.datasets[partition])
+        for partition in resolved_partitions
+    }
+
+
+def build_dataloaders(config, datasets):
+    """
+    Build dataloaders for already instantiated datasets.
+
+    Args:
+        config (DictConfig): hydra experiment config.
+        datasets (dict[str, Dataset]): dataset instances keyed by partition.
+    Returns:
+        dict[str, DataLoader]: dataloaders keyed by partition.
+    """
     dataloaders = {}
-    for dataset_partition in config.datasets.keys():
-        dataset = datasets[dataset_partition]
-
+    for dataset_partition, dataset in datasets.items():
         assert config.dataloader.batch_size <= len(dataset), (
             f"The batch size ({config.dataloader.batch_size}) cannot "
             f"be larger than the dataset length ({len(dataset)})"
@@ -84,5 +113,29 @@ def get_dataloaders(config, device):
             worker_init_fn=set_worker_seed,
         )
         dataloaders[dataset_partition] = partition_dataloader
+    return dataloaders
 
+
+def get_dataloaders(config, device, partitions=None):
+    """
+    Create dataloaders for each of the dataset partitions.
+    Also creates instance and batch transforms.
+
+    Args:
+        config (DictConfig): hydra experiment config.
+        device (str): device to use for batch transforms.
+        partitions (Iterable[str] | None): requested dataset partitions.
+    Returns:
+        dataloaders (dict[DataLoader]): dict containing dataloader for a
+            partition defined by key.
+        batch_transforms (dict[Callable] | None): transforms that
+            should be applied on the whole batch. Depend on the
+            tensor name.
+    """
+    # transforms or augmentations init
+    batch_transforms = instantiate(config.transforms.batch_transforms)
+    move_batch_transforms_to_device(batch_transforms, device)
+
+    datasets = build_datasets(config, partitions=partitions)
+    dataloaders = build_dataloaders(config, datasets)
     return dataloaders, batch_transforms

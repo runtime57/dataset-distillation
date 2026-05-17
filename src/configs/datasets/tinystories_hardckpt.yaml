@@ -1,0 +1,15 @@
+train:
+  _target_: src.datasets.HardTokenCheckpointDataset
+  checkpoint_path: null
+  max_sequences: null
+val:
+  _target_: src.datasets.TinyStoriesByteDataset
+  split: "validation"
+  sequence_length: ${model.max_seq_len}
+  max_texts: 400
+  max_sequences: 128
+  streaming: true
+  hf_cache_dir: null
+  data_dir: "data/tinystories_byte"
+  local_text_path: null
+  use_cache: true
