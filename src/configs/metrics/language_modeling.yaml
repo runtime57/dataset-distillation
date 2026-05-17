@@ -1,0 +1,6 @@
+train:
+  - _target_: src.metrics.PerplexityMetric
+    name: "Perplexity"
+inference:
+  - _target_: src.metrics.PerplexityMetric
+    name: "Perplexity"

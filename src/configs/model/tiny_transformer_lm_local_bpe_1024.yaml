@@ -1,0 +1,9 @@
+_target_: src.model.TinyTransformerLM
+vocab_size: 1024
+max_seq_len: 128
+d_model: 128
+n_heads: 4
+n_layers: 2
+dim_feedforward: 512
+dropout: 0.1
+pad_token_id: 0

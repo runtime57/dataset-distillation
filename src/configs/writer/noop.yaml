@@ -1,0 +1,5 @@
+_target_: src.logger.NoOpWriter
+run_name: "tinystories_byte_lm"
+loss_names: ["loss"]
+log_checkpoints: False
+id_length: 8

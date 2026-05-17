@@ -16,15 +16,18 @@ class MetricTracker:
                 from each batch.
         """
         self.writer = writer
-        self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
+        self._data = pd.DataFrame(
+            0.0,
+            index=keys,
+            columns=["total", "counts", "average"],
+        )
         self.reset()
 
     def reset(self):
         """
         Reset all metrics after epoch end.
         """
-        for col in self._data.columns:
-            self._data[col].values[:] = 0
+        self._data.loc[:, :] = 0.0
 
     def update(self, key, value, n=1):
         """

@@ -1,0 +1,43 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - writer: noop
+  - metrics: language_modeling
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+datasets:
+  train:
+    max_sequences: 2048
+    max_texts: 6000
+    local_text_path: null
+    use_cache: true
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3e-4
+  weight_decay: 0.01
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  gamma: 0.95
+  step_size: ${trainer.epoch_len}
+
+loss_function:
+  _target_: src.loss.LanguageModelingLoss
+
+trainer:
+  log_step: 50
+  n_epochs: 5
+  epoch_len: 128
+  device_tensors: ["input_ids", "labels", "attention_mask"]
+  resume_from: null
+  device: auto
+  override: True
+  monitor: "min val_Perplexity"
+  save_period: 1
+  early_stop: ${trainer.n_epochs}
+  save_dir: "saved/real_scaling"
+  seed: 1
+  max_grad_norm: 1.0

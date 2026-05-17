@@ -45,6 +45,21 @@ def set_random_seed(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 
+def resolve_device(device: str) -> str:
+    """
+    Resolve the runtime device.
+
+    Auto mode prefers CUDA, then Apple MPS, and falls back to CPU.
+    """
+    if device != "auto":
+        return device
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 # https://github.com/wandb/wandb/blob/main/wandb/sdk/lib/runid.py
 def generate_id(length: int = 8) -> str:
     """

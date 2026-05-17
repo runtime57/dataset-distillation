@@ -1,6 +1,7 @@
 import torch
 
 from src.metrics.base_metric import BaseMetric
+from src.utils.init_utils import resolve_device
 
 
 class ExampleMetric(BaseMetric):
@@ -17,8 +18,7 @@ class ExampleMetric(BaseMetric):
             device (str): device for the metric calculation (and tensors).
         """
         super().__init__(*args, **kwargs)
-        if device == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = resolve_device(device)
         self.metric = metric.to(device)
 
     def __call__(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs):
