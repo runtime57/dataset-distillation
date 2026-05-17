@@ -1,0 +1,4 @@
+parameterization: sequence_concepts
+num_concepts: 16
+concept_logit_scale: 32.0
+concept_input_mode: probs

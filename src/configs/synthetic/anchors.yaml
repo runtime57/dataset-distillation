@@ -1,0 +1,2 @@
+parameterization: anchors
+num_anchors: 64

@@ -1,0 +1,3 @@
+parameterization: sparse_sequence_anchors
+num_anchors: 16
+anchor_topk: 8

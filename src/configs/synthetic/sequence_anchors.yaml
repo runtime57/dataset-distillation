@@ -1,0 +1,2 @@
+parameterization: sequence_anchors
+num_anchors: 16
