@@ -1,6 +1,6 @@
-torch==2.2.0
+torch
 torchmetrics
-numpy==1.26.4
+numpy
 tqdm
 matplotlib
 pandas
