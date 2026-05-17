@@ -1,0 +1,60 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 64
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+datasets:
+  train:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 500
+    max_sequences: 256
+  val:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 200
+    max_sequences: 64
+
+dataloader:
+  batch_size: 8
+
+distillation:
+  seed: 1
+  device: auto
+  run_name: "distill64_local_bpe_1024_gm_n32_v1"
+  save_dir: "saved/distillation"
+  override: true
+  objective: gradient_matching
+  n_steps: 400
+  log_step: 40
+  save_period: 50
+  save_step_checkpoints: false
+  real_split: "train"
+  outer_batches: 4
+  inner_lr: 1e-3
+  learn_inner_lr: false
+  min_inner_lr: null
+  max_inner_lr: null
+  entropy_weight: 0.0
+  max_grad_norm: 1.0
+  synthetic:
+    num_sequences: 32
+    sequence_length: ${model.max_seq_len}
+    vocab_size: ${model.vocab_size}
+    batch_size: 16
+    temperature: 1.0
+    init_std: 0.02
+    init_from_real: true
+    init_confidence: 5.0
+    parameterization: full
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.01

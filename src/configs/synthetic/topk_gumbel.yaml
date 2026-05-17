@@ -1,0 +1,2 @@
+parameterization: topk_gumbel
+topk: 16

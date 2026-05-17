@@ -1,0 +1,3 @@
+objective: gradient_matching
+outer_batches: 4
+learn_inner_lr: false
