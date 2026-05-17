@@ -1,0 +1,6 @@
+objective: trajectory_matching
+real_split: val
+outer_batches: 4
+learn_inner_lr: false
+n_inner_steps: 5
+expert_trajectory_path: "saved/expert_trajectories/tiny_lm_local_bpe_1024/expert_checkpoints.pth"

@@ -1,0 +1,31 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 64
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+datasets:
+  train:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 500
+    max_sequences: 256
+
+dataloader:
+  batch_size: 8
+
+expert:
+  seed: 1
+  device: auto
+  lr: 0.01
+  n_steps: 500
+  save_period: 10
+  save_dir: "saved/expert_trajectories/tiny_lm_local_bpe_1024"
