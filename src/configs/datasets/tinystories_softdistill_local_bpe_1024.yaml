@@ -6,14 +6,32 @@ train:
 
 val:
   _target_: src.datasets.TinyStoriesLocalBPEDataset
-  split: "validation"
+  split: "train"
   tokenizer_path: "artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json"
   pad_token: "[PAD]"
   eos_token: "[EOS]"
   unk_token: "[UNK]"
   sequence_length: ${model.max_seq_len}
-  max_texts: 400
-  max_sequences: 128
+  skip_texts: 10000
+  max_texts: 3000
+  max_sequences: null
+  streaming: true
+  hf_cache_dir: null
+  data_dir: "data/tinystories_local_bpe_1024"
+  local_text_path: null
+  use_cache: true
+
+test:
+  _target_: src.datasets.TinyStoriesLocalBPEDataset
+  split: "train"
+  tokenizer_path: "artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json"
+  pad_token: "[PAD]"
+  eos_token: "[EOS]"
+  unk_token: "[UNK]"
+  sequence_length: ${model.max_seq_len}
+  skip_texts: 13000
+  max_texts: 2000
+  max_sequences: null
   streaming: true
   hf_cache_dir: null
   data_dir: "data/tinystories_local_bpe_1024"

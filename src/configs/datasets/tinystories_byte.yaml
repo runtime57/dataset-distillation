@@ -2,8 +2,9 @@ train:
   _target_: src.datasets.TinyStoriesByteDataset
   split: "train"
   sequence_length: 128
-  max_texts: 2000
-  max_sequences: 1024
+  skip_texts: 0
+  max_texts: 10000
+  max_sequences: null
   streaming: true
   hf_cache_dir: null
   data_dir: "data/tinystories_byte"
@@ -11,10 +12,24 @@ train:
   use_cache: true
 val:
   _target_: src.datasets.TinyStoriesByteDataset
-  split: "validation"
+  split: "train"
   sequence_length: 128
-  max_texts: 400
-  max_sequences: 128
+  skip_texts: 10000
+  max_texts: 3000
+  max_sequences: null
+  streaming: true
+  hf_cache_dir: null
+  data_dir: "data/tinystories_byte"
+  local_text_path: null
+  use_cache: true
+
+test:
+  _target_: src.datasets.TinyStoriesByteDataset
+  split: "train"
+  sequence_length: 128
+  skip_texts: 13000
+  max_texts: 2000
+  max_sequences: null
   streaming: true
   hf_cache_dir: null
   data_dir: "data/tinystories_byte"

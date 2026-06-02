@@ -21,6 +21,7 @@ class TinyStoriesBPEDataset(Dataset):
         text_field="text",
         tokenizer_name="gpt2",
         sequence_length=128,
+        skip_texts=0,
         max_texts=2000,
         max_sequences=1024,
         streaming=True,
@@ -31,6 +32,10 @@ class TinyStoriesBPEDataset(Dataset):
         add_eos=True,
         use_cache=True,
     ):
+        skip_texts = int(skip_texts or 0)
+        if skip_texts < 0:
+            raise ValueError("skip_texts must be non-negative.")
+
         self.sequence_length = sequence_length
         self.tokenizer = GPT2BPETokenizer(
             tokenizer_name=tokenizer_name,
@@ -43,9 +48,11 @@ class TinyStoriesBPEDataset(Dataset):
             split=split,
             tokenizer_name=tokenizer_name,
             sequence_length=sequence_length,
+            skip_texts=skip_texts,
             max_texts=max_texts,
             max_sequences=max_sequences,
             local_text_path=local_text_path,
+            add_eos=add_eos,
         )
 
         if use_cache and cache_path.exists():
@@ -56,6 +63,7 @@ class TinyStoriesBPEDataset(Dataset):
             split=split,
             dataset_name=dataset_name,
             text_field=text_field,
+            skip_texts=skip_texts,
             max_texts=max_texts,
             streaming=streaming,
             hf_cache_dir=hf_cache_dir,
@@ -108,6 +116,7 @@ class TinyStoriesBPEDataset(Dataset):
         split,
         dataset_name,
         text_field,
+        skip_texts,
         max_texts,
         streaming,
         hf_cache_dir,
@@ -118,7 +127,11 @@ class TinyStoriesBPEDataset(Dataset):
             with text_path.open("r", encoding="utf-8") as file:
                 lines = (line.strip() for line in file)
                 lines = (line for line in lines if line)
-                rows = lines if max_texts is None else islice(lines, max_texts)
+                rows = islice(
+                    lines,
+                    skip_texts,
+                    None if max_texts is None else skip_texts + max_texts,
+                )
                 yield from rows
             return
 
@@ -137,10 +150,20 @@ class TinyStoriesBPEDataset(Dataset):
             cache_dir=hf_cache_dir,
         )
 
-        if not streaming and max_texts is not None:
-            dataset = dataset.select(range(min(max_texts, len(dataset))))
+        if not streaming and (skip_texts > 0 or max_texts is not None):
+            stop = None if max_texts is None else skip_texts + max_texts
+            stop = len(dataset) if stop is None else min(stop, len(dataset))
+            dataset = dataset.select(range(min(skip_texts, len(dataset)), stop))
 
-        rows = dataset if max_texts is None else islice(dataset, max_texts)
+        rows = (
+            dataset
+            if not streaming
+            else islice(
+                dataset,
+                skip_texts,
+                None if max_texts is None else skip_texts + max_texts,
+            )
+        )
         for row in rows:
             text = row[text_field]
             if text:
@@ -153,28 +176,46 @@ class TinyStoriesBPEDataset(Dataset):
         split,
         tokenizer_name,
         sequence_length,
+        skip_texts,
         max_texts,
         max_sequences,
         local_text_path,
+        add_eos,
     ):
         dataset_slug = TinyStoriesBPEDataset._slug(dataset_name)
         split_slug = TinyStoriesBPEDataset._slug(split)
         tokenizer_slug = TinyStoriesBPEDataset._slug(tokenizer_name)
         source_slug = f"{dataset_slug}_{tokenizer_slug}"
         if local_text_path is not None:
-            path = Path(local_text_path).expanduser()
-            try:
-                path = path.resolve()
-            except OSError:
-                pass
-            path_hash = hashlib.sha1(str(path).encode("utf-8")).hexdigest()[:8]
+            path = TinyStoriesBPEDataset._resolve_path(local_text_path)
+            path_hash = TinyStoriesBPEDataset._file_hash(path)
             source_slug = f"local_{TinyStoriesBPEDataset._slug(path.stem)}_{path_hash}_{tokenizer_slug}"
         filename = (
             f"{source_slug}_{split_slug}_seq{sequence_length}"
-            f"_texts{max_texts}_chunks{max_sequences}.pt"
+            f"_skip{skip_texts}_texts{max_texts}_chunks{max_sequences}"
+            f"_eos{int(bool(add_eos))}.pt"
         )
         return ROOT_PATH / data_dir / filename
 
     @staticmethod
     def _slug(value):
         return "".join(char if char.isalnum() else "_" for char in str(value))
+
+    @staticmethod
+    def _resolve_path(path):
+        path = Path(path).expanduser()
+        if not path.is_absolute():
+            path = ROOT_PATH / path
+        try:
+            return path.resolve()
+        except OSError:
+            return path
+
+    @staticmethod
+    def _file_hash(path):
+        path = TinyStoriesBPEDataset._resolve_path(path)
+        digest = hashlib.sha1()
+        with path.open("rb") as file:
+            for chunk in iter(lambda: file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()[:8]

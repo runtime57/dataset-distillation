@@ -26,7 +26,11 @@ def gradient_matching_loss(
                 "attention_mask": real_batch.get("attention_mask"),
             },
         )
-        real_loss = hard_lm_loss(real_outputs["logits"], real_batch["labels"])
+        real_loss = hard_lm_loss(
+            real_outputs["logits"],
+            real_batch["labels"],
+            attention_mask=real_batch.get("attention_mask"),
+        )
         real_grads = torch.autograd.grad(
             real_loss,
             tuple(params.values()),
@@ -56,7 +60,11 @@ def gradient_matching_loss(
             "attention_mask": synth_batch["attention_mask"],
         },
     )
-    synth_loss = soft_lm_loss(synth_outputs["logits"], synth_batch["target_probs"])
+    synth_loss = soft_lm_loss(
+        synth_outputs["logits"],
+        synth_batch["target_probs"],
+        attention_mask=synth_batch["attention_mask"],
+    )
     synth_grads = torch.autograd.grad(
         synth_loss,
         tuple(params.values()),
@@ -65,7 +73,7 @@ def gradient_matching_loss(
     )
 
     total = torch.tensor(0.0, device=device)
-    n_matched = 0
+    total_weight = 0
     for real_grad, synth_grad in zip(real_grads_mean, synth_grads):
         if real_grad is not None and synth_grad is not None:
             real_flat = real_grad.flatten()
@@ -76,6 +84,7 @@ def gradient_matching_loss(
                 cosine_similarity = (real_flat * synth_flat).sum() / (
                     real_norm * synth_norm
                 )
-                total = total + (1.0 - cosine_similarity)
-                n_matched += 1
-    return total / max(n_matched, 1), synth_loss
+                weight = real_flat.numel()
+                total = total + weight * (1.0 - cosine_similarity)
+                total_weight += weight
+    return total / max(total_weight, 1), synth_loss

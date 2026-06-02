@@ -5,6 +5,12 @@ from src.distillation.data import synthetic_batch
 from src.distillation.losses import soft_lm_loss
 
 
+def _checkpoint_state_dict(checkpoint):
+    if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
+        return checkpoint["state_dict"]
+    return checkpoint
+
+
 def trajectory_matching_loss(
     model,
     buffers,
@@ -17,16 +23,20 @@ def trajectory_matching_loss(
 ):
     canonical_keys = set(dict(model.named_parameters()).keys())
     num_experts = len(expert_checkpoints)
+    if num_experts < 2:
+        raise ValueError("Trajectory matching requires at least two checkpoints.")
     step_index = torch.randint(0, num_experts - 1, (1,)).item()
+    start_state = _checkpoint_state_dict(expert_checkpoints[step_index])
+    end_state = _checkpoint_state_dict(expert_checkpoints[step_index + 1])
 
     expert_start = {
         key: value.to(device)
-        for key, value in expert_checkpoints[step_index].items()
+        for key, value in start_state.items()
         if key in canonical_keys
     }
     expert_end = {
         key: value.to(device)
-        for key, value in expert_checkpoints[step_index + 1].items()
+        for key, value in end_state.items()
         if key in canonical_keys
     }
 
@@ -51,7 +61,11 @@ def trajectory_matching_loss(
                 "attention_mask": synth_batch_data["attention_mask"],
             },
         )
-        loss = soft_lm_loss(outputs["logits"], synth_batch_data["target_probs"])
+        loss = soft_lm_loss(
+            outputs["logits"],
+            synth_batch_data["target_probs"],
+            attention_mask=synth_batch_data["attention_mask"],
+        )
         grads = torch.autograd.grad(
             loss,
             tuple(current_params.values()),

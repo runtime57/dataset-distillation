@@ -4,6 +4,24 @@ from torch import nn
 from src.distillation.parameterizations.base import BaseSyntheticTokenDataset
 
 
+def _sample_unique_support(
+    num_positions,
+    vocab_size,
+    k,
+    device,
+    forced_ids=None,
+    chunk_size=4096,
+):
+    support = torch.empty(num_positions, k, dtype=torch.long, device=device)
+    for start in range(0, num_positions, chunk_size):
+        end = min(start + chunk_size, num_positions)
+        scores = torch.rand(end - start, vocab_size, device=device)
+        if forced_ids is not None:
+            scores.scatter_(1, forced_ids[start:end].unsqueeze(1), 2.0)
+        support[start:end] = scores.topk(k, dim=-1).indices
+    return support
+
+
 class FullSoftTokenDataset(BaseSyntheticTokenDataset):
     """
     Trainable full soft-token representation for synthetic text.
@@ -77,10 +95,13 @@ class TopKSoftTokenDataset(BaseSyntheticTokenDataset):
         self.logits = nn.Parameter(
             torch.randn(num_sequences, sequence_length, k) * init_std
         )
-        self.register_buffer(
-            "support_ids",
-            torch.randint(vocab_size, size=(num_sequences, sequence_length, k)),
-        )
+        initial_support = _sample_unique_support(
+            num_positions=num_sequences * sequence_length,
+            vocab_size=vocab_size,
+            k=k,
+            device=torch.device("cpu"),
+        ).view(num_sequences, sequence_length, k)
+        self.register_buffer("support_ids", initial_support)
 
     def token_probs(self, indices=None, embedding_weight=None):
         logits = self.logits if indices is None else self.logits[indices]
@@ -107,13 +128,14 @@ class TopKSoftTokenDataset(BaseSyntheticTokenDataset):
                 f"{tuple(input_ids.shape)}."
             )
         with torch.no_grad():
-            self.support_ids[..., 0] = input_ids
-            if self.k > 1:
-                self.support_ids[..., 1:] = torch.randint(
-                    self.vocab_size,
-                    size=(self.num_sequences, self.sequence_length, self.k - 1),
-                    device=input_ids.device,
-                )
+            support_ids = _sample_unique_support(
+                num_positions=self.num_sequences * self.sequence_length,
+                vocab_size=self.vocab_size,
+                k=self.k,
+                device=input_ids.device,
+                forced_ids=input_ids.reshape(-1),
+            ).view(self.num_sequences, self.sequence_length, self.k)
+            self.support_ids.copy_(support_ids)
             self.logits.zero_()
             self.logits[..., 0] = confidence
             self.logits.add_(torch.randn_like(self.logits) * 0.01)

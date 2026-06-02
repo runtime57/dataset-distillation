@@ -69,9 +69,14 @@ class Inferencer(BaseTrainer):
         # define metrics
         self.metrics = metrics
         if self.metrics is not None:
+            metric_transforms = {
+                metric.name: getattr(metric, "transform", None)
+                for metric in self.metrics["inference"]
+            }
             self.evaluation_metrics = MetricTracker(
                 *[m.name for m in self.metrics["inference"]],
                 writer=None,
+                transforms=metric_transforms,
             )
         else:
             self.evaluation_metrics = None
@@ -124,7 +129,12 @@ class Inferencer(BaseTrainer):
 
         if metrics is not None:
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch))
+                metric_value = met(**batch)
+                if isinstance(metric_value, tuple):
+                    value, count = metric_value
+                    metrics.update(met.name, value, n=count)
+                else:
+                    metrics.update(met.name, metric_value)
 
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk

@@ -16,12 +16,12 @@ model:
 datasets:
   train:
     sequence_length: ${model.max_seq_len}
-    max_texts: null
-    max_sequences: 10000
+    max_texts: 10000
+    max_sequences: null
   val:
     sequence_length: ${model.max_seq_len}
-    max_texts: 200
-    max_sequences: 64
+    max_texts: 3000
+    max_sequences: null
 
 dataloader:
   batch_size: 8
@@ -39,13 +39,13 @@ distillation:
   save_step_checkpoints: false
   real_split: "train"
   outer_batches: 4
-  inner_lr: 1e-3
+  inner_lr: 0.01
   learn_inner_lr: false
   min_inner_lr: null
   max_inner_lr: null
   entropy_weight: 0.0
   max_grad_norm: 1.0
-  expert_trajectory_path: "saved/expert_trajectories/tiny_lm_local_bpe_1024_seq256/expert_checkpoints.pth"
+  expert_trajectory_path: "saved/expert_trajectories/tiny_lm_local_bpe_1024_seq256_sp5_lr001/expert_checkpoints.pth"
   n_inner_steps: 5
   synthetic:
     num_sequences: 128

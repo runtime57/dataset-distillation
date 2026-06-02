@@ -6,7 +6,7 @@ class MetricTracker:
     Class to aggregate metrics from many batches.
     """
 
-    def __init__(self, *keys, writer=None):
+    def __init__(self, *keys, writer=None, transforms=None):
         """
         Args:
             *keys (list[str]): list (as positional arguments) of metric
@@ -16,6 +16,7 @@ class MetricTracker:
                 from each batch.
         """
         self.writer = writer
+        self.transforms = transforms or {}
         self._data = pd.DataFrame(
             0.0,
             index=keys,
@@ -53,7 +54,11 @@ class MetricTracker:
         Returns:
             average_value (float): average value for the metric.
         """
-        return self._data.average[key]
+        value = self._data.average[key]
+        transform = self.transforms.get(key)
+        if transform is not None and self._data.counts[key] > 0:
+            return transform(value)
+        return value
 
     def result(self):
         """
@@ -63,7 +68,7 @@ class MetricTracker:
             average_metrics (dict): dict, containing average metrics
                 for each metric name.
         """
-        return dict(self._data.average)
+        return {key: self.avg(key) for key in self._data.index}
 
     def keys(self):
         """

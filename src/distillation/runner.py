@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import torch
 from hydra.utils import instantiate
+from omegaconf import OmegaConf
 from tqdm.auto import trange
 
 from src.datasets.data_utils import build_dataloaders, build_datasets, inf_loop
@@ -34,12 +35,121 @@ def _scalar(value):
     return float(value)
 
 
+def _plain_config(config_node):
+    return OmegaConf.to_container(config_node, resolve=True)
+
+
+def _assert_metadata_equal(name, expected, actual):
+    if expected != actual:
+        raise ValueError(
+            f"Expert trajectory {name} does not match current TM config. "
+            f"Expected {expected!r}, got {actual!r}."
+        )
+
+
+def _assert_dataloader_compatible(expected, actual):
+    expected_batch_size = expected.get("batch_size")
+    actual_batch_size = actual.get("batch_size") if isinstance(actual, dict) else None
+    if expected_batch_size != actual_batch_size:
+        raise ValueError(
+            "Expert trajectory dataloader batch_size does not match current "
+            "TM config. "
+            f"Expected {expected_batch_size!r}, got {actual_batch_size!r}."
+        )
+
+
+def _validate_expert_trajectory(payload, config):
+    if not isinstance(payload, dict) or "metadata" not in payload:
+        raise ValueError(
+            "Expert trajectory must use the metadata/checkpoints format. "
+            "Regenerate it with src/compute_expert_trajectory.py after the "
+            "TM protocol fix."
+        )
+    checkpoints = payload.get("checkpoints")
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, dict) or not isinstance(checkpoints, list):
+        raise ValueError(
+            "Malformed expert trajectory: expected dict metadata and list "
+            "checkpoints."
+        )
+    if len(checkpoints) < 2:
+        raise ValueError(
+            "Expert trajectory must contain at least two checkpoints."
+        )
+
+    steps = []
+    for index, checkpoint in enumerate(checkpoints):
+        if not isinstance(checkpoint, dict):
+            raise ValueError(f"Malformed expert checkpoint #{index}: not a dict.")
+        if "step" not in checkpoint or "state_dict" not in checkpoint:
+            raise ValueError(
+                f"Malformed expert checkpoint #{index}: expected 'step' and "
+                "'state_dict'."
+            )
+        steps.append(int(checkpoint["step"]))
+    if steps[0] != 0:
+        raise ValueError(f"Expert trajectory must start at step 0, got {steps[0]}.")
+
+    n_inner_steps = int(config.distillation.get("n_inner_steps", 5))
+    step_diffs = [right - left for left, right in zip(steps, steps[1:])]
+    if any(diff != n_inner_steps for diff in step_diffs):
+        raise ValueError(
+            "Expert checkpoint intervals must equal distillation.n_inner_steps. "
+            f"Got steps={steps[:10]}{'...' if len(steps) > 10 else ''}, "
+            f"diffs={step_diffs[:10]}{'...' if len(step_diffs) > 10 else ''}, "
+            f"n_inner_steps={n_inner_steps}."
+        )
+
+    _assert_metadata_equal("model", _plain_config(config.model), metadata.get("model"))
+    _assert_metadata_equal(
+        "train dataset",
+        _plain_config(config.datasets.train),
+        metadata.get("datasets", {}).get("train"),
+    )
+    _assert_dataloader_compatible(
+        _plain_config(config.dataloader),
+        metadata.get("dataloader"),
+    )
+    _assert_metadata_equal(
+        "save_period",
+        n_inner_steps,
+        int(metadata.get("save_period")),
+    )
+
+    momentum = float(
+        metadata.get(
+            "momentum",
+            metadata.get("optimizer", {}).get("momentum", 0.0),
+        )
+    )
+    if momentum != 0.0:
+        raise ValueError(
+            "TM currently supports only momentum-free expert trajectories. "
+            f"Got expert momentum={momentum}."
+        )
+
+    if not bool(config.distillation.get("learn_inner_lr", False)):
+        expert_lr = float(metadata.get("lr", metadata.get("optimizer", {}).get("lr")))
+        inner_lr = float(config.distillation.inner_lr)
+        if abs(expert_lr - inner_lr) > 1e-12:
+            raise ValueError(
+                "Expert lr must match distillation.inner_lr when "
+                "learn_inner_lr=false. "
+                f"Got expert lr={expert_lr}, inner_lr={inner_lr}."
+            )
+    return checkpoints, metadata
+
+
 def _load_expert_checkpoints(config, objective):
     if objective != "trajectory_matching":
         return None
     expert_path = ROOT_PATH / config.distillation.expert_trajectory_path
-    expert_checkpoints = torch.load(expert_path, map_location="cpu")
-    print(f"Loaded {len(expert_checkpoints)} expert checkpoints from {expert_path}")
+    payload = torch.load(expert_path, map_location="cpu")
+    expert_checkpoints, metadata = _validate_expert_trajectory(payload, config)
+    print(
+        f"Loaded {len(expert_checkpoints)} expert checkpoints "
+        f"(step {metadata['save_period']}, lr {metadata['lr']}) from {expert_path}"
+    )
     return expert_checkpoints
 
 

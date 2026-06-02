@@ -25,5 +25,11 @@ def outer_loss_on_real_batches(
                 "attention_mask": real_batch.get("attention_mask"),
             },
         )
-        losses.append(hard_lm_loss(real_outputs["logits"], real_batch["labels"]))
+        losses.append(
+            hard_lm_loss(
+                real_outputs["logits"],
+                real_batch["labels"],
+                attention_mask=real_batch.get("attention_mask"),
+            )
+        )
     return torch.stack(losses).mean()

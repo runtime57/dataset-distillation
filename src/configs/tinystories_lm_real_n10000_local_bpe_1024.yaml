@@ -9,8 +9,8 @@ defaults:
 
 datasets:
   train:
-    max_sequences: 10000
-    max_texts: 30000
+    max_sequences: null
+    max_texts: 10000
     local_text_path: null
     use_cache: true
 

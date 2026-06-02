@@ -52,7 +52,12 @@ class Trainer(BaseTrainer):
             metrics.update(loss_name, batch[loss_name].item())
 
         for met in metric_funcs:
-            metrics.update(met.name, met(**batch))
+            metric_value = met(**batch)
+            if isinstance(metric_value, tuple):
+                value, count = metric_value
+                metrics.update(met.name, value, n=count)
+            else:
+                metrics.update(met.name, metric_value)
         return batch
 
     def _log_batch(self, batch_idx, batch, mode="train"):

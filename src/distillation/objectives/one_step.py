@@ -29,7 +29,11 @@ def one_step_parameters(
             "attention_mask": synth_batch["attention_mask"],
         },
     )
-    inner_loss = soft_lm_loss(outputs["logits"], synth_batch["target_probs"])
+    inner_loss = soft_lm_loss(
+        outputs["logits"],
+        synth_batch["target_probs"],
+        attention_mask=synth_batch["attention_mask"],
+    )
     gradients = torch.autograd.grad(
         inner_loss,
         tuple(params.values()),

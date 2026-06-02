@@ -8,8 +8,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 @hydra.main(
     version_base=None,
-    config_path="src/configs",
-    config_name="expert_trajectory_local_bpe_1024",
+    config_path="configs",
+    config_name="expert_trajectory_seq256_local_bpe_1024",
 )
 
 def main(config):

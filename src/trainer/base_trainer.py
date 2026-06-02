@@ -117,16 +117,26 @@ class BaseTrainer:
 
         # define metrics
         self.metrics = metrics
+        train_metric_transforms = {
+            metric.name: getattr(metric, "transform", None)
+            for metric in self.metrics["train"]
+        }
+        inference_metric_transforms = {
+            metric.name: getattr(metric, "transform", None)
+            for metric in self.metrics["inference"]
+        }
         self.train_metrics = MetricTracker(
             *self.config.writer.loss_names,
             "grad_norm",
             *[m.name for m in self.metrics["train"]],
             writer=self.writer,
+            transforms=train_metric_transforms,
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
             *[m.name for m in self.metrics["inference"]],
             writer=self.writer,
+            transforms=inference_metric_transforms,
         )
 
         # define checkpoint dir and init everything if required
@@ -233,14 +243,10 @@ class BaseTrainer:
                 )
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
-                # we don't want to reset train metrics at the start of every epoch
-                # because we are interested in recent train metrics
-                last_train_metrics = self.train_metrics.result()
-                self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
 
-        logs = last_train_metrics
+        logs = self.train_metrics.result()
 
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():

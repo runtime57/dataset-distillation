@@ -1,0 +1,9 @@
+tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+vocab_size: 1024
+pad_token: '[PAD]'
+pad_token_id: 0
+eos_token: '[EOS]'
+eos_token_id: 1
+unk_token: '[UNK]'
+unk_token_id: 2
+input_path: data/tinystories_train_10k.txt
