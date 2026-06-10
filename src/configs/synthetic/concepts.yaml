@@ -1,4 +1,4 @@
 parameterization: concepts
 num_concepts: 64
-concept_logit_scale: 32.0
-concept_input_mode: probs
+concept_logit_scale: 8.0
+concept_input_mode: concepts

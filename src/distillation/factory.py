@@ -61,16 +61,16 @@ def build_synthetic_data(config):
             **common_kwargs,
             num_concepts=synthetic_config.get("num_concepts", 64),
             d_model=config.model.d_model,
-            logit_scale=synthetic_config.get("concept_logit_scale", 32.0),
-            input_mode=synthetic_config.get("concept_input_mode", "probs"),
+            logit_scale=synthetic_config.get("concept_logit_scale", 8.0),
+            input_mode=synthetic_config.get("concept_input_mode", "concepts"),
         )
     if parameterization == "sequence_concepts":
         return SequenceConceptSoftTokenDataset(
             **common_kwargs,
             num_concepts=synthetic_config.get("num_concepts", 16),
             d_model=config.model.d_model,
-            logit_scale=synthetic_config.get("concept_logit_scale", 32.0),
-            input_mode=synthetic_config.get("concept_input_mode", "probs"),
+            logit_scale=synthetic_config.get("concept_logit_scale", 8.0),
+            input_mode=synthetic_config.get("concept_input_mode", "concepts"),
         )
 
     raise ValueError(

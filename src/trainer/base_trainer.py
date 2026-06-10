@@ -96,6 +96,7 @@ class BaseTrainer:
         self.save_period = (
             self.cfg_trainer.save_period
         )  # checkpoint each save_period epochs
+        self.save_only_best = bool(self.cfg_trainer.get("save_only_best", False))
         self.monitor = self.cfg_trainer.get(
             "monitor", "off"
         )  # format: "mnt_mode mnt_metric"
@@ -190,7 +191,11 @@ class BaseTrainer:
                 logs, not_improved_count
             )
 
-            if epoch % self.save_period == 0 or best:
+            should_save = best
+            if not self.save_only_best:
+                should_save = should_save or epoch % self.save_period == 0
+
+            if should_save:
                 self._save_checkpoint(epoch, save_best=best, only_best=True)
 
             if stop_process:  # early_stop

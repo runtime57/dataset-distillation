@@ -28,6 +28,7 @@ trainer:
   resume_from: null
   device: auto
   override: True
+  save_only_best: false
   monitor: "min val_Perplexity"
   save_period: 1
   early_stop: ${trainer.n_epochs}

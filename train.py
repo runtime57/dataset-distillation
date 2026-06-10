@@ -1,6 +1,7 @@
 import warnings
 
 import hydra
+import torch
 from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
@@ -13,6 +14,28 @@ from src.utils.init_utils import (
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+
+def maybe_compile_model(model, config, logger):
+    compile_enabled = bool(config.trainer.get("compile_enabled", False))
+    if not compile_enabled:
+        return model
+
+    if not hasattr(torch, "compile"):
+        logger.warning("torch.compile is unavailable in this PyTorch build.")
+        return model
+
+    compile_mode = config.trainer.get("compile_mode")
+    compile_dynamic = config.trainer.get("compile_dynamic", False)
+    logger.info(
+        "Compiling model with torch.compile "
+        f"(mode={compile_mode!r}, dynamic={compile_dynamic})"
+    )
+    return torch.compile(
+        model,
+        mode=compile_mode,
+        dynamic=compile_dynamic,
+    )
 
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
@@ -40,6 +63,7 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     logger.info(model)
+    model = maybe_compile_model(model, config, logger)
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

@@ -1,0 +1,17 @@
+defaults:
+  - tinystories_lm_softdistill_local_bpe_1024
+  - _self_
+
+model:
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+datasets:
+  val:
+    sequence_length: ${model.max_seq_len}
+  test:
+    sequence_length: ${model.max_seq_len}

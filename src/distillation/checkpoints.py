@@ -15,6 +15,7 @@ def save_checkpoint(
     synthetic_data,
     config,
     best_outer_loss=None,
+    best_tracking_loss=None,
     inner_lr=None,
     checkpoint_name="full_soft_tokens.pth",
     decoded_name="decoded_samples.txt",
@@ -51,6 +52,7 @@ def save_checkpoint(
         "synthetic_parameter_count": synthetic_data.parameter_count(),
         "synthetic_state_dict": synthetic_state_dict,
         "best_outer_loss": best_outer_loss,
+        "best_tracking_loss": best_tracking_loss,
         "inner_lr": (
             None
             if inner_lr is None
