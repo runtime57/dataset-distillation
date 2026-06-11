@@ -1,0 +1,16 @@
+| series_source | distill_steps | par | k | best_epoch | val_ppl | test_ppl |
+| --- | --- | --- | --- | --- | --- | --- |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | topk | 4 | 13 | 52.601 | 49.372 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | topk | 8 | 13 | 53.524 | 51.174 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | topk | 16 | 13 | 53.371 | 51.107 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | topk | 32 | 14 | 53.76 | 51.391 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | topk | 64 | 12 | 54.117 | 52.017 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | topk | 128 | 13 | 53.534 | 51.187 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | topk | 256 | 14 | 53.777 | 51.838 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | gumbel | 4 | 13 | 53.819 | 52.005 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | gumbel | 8 | 13 | 53.819 | 52.005 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | gumbel | 16 | 13 | 53.819 | 52.004 |
+| results_seq256_nl2_do01_distil400_e15_k4_8_16_32 | 400 | gumbel | 32 | 13 | 53.819 | 52.004 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | gumbel | 64 | 13 | 53.818 | 52.004 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | gumbel | 128 | 13 | 53.817 | 52.003 |
+| results_seq256_nl2_do01_distil400_e15_k64_128_256 | 400 | gumbel | 256 | 13 | 53.816 | 52.002 |

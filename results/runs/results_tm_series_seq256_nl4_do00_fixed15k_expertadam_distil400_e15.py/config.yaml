@@ -1,0 +1,115 @@
+series:
+  name: results_tm_series_seq256_nl4_do00_fixed15k_expertadam_distil400_e15.py
+  seq_len: 256
+  model_tag: nl4_do00_fixed15k_expertadam
+  parameterizations:
+  - topk
+  - gumbel
+  k_values:
+  - '4'
+  - '8'
+  - '16'
+  - '32'
+  - '64'
+  - '128'
+  - '256'
+  distill_steps:
+  - '400'
+  best_overall:
+    parameterization: topk
+    k: 16
+    best_epoch: 10
+    val_ppl: 60.737832150596674
+    test_ppl: 58.17206165073663
+  rerun_command: 'SEQ_LEN=256 \
+
+    MODEL_TAG=nl4_do00_fixed15k_expertadam \
+
+    DISTILL_CONFIG=distill_soft_tokens_tm_10k_n256_local_bpe_1024_seq256_nl4_do00_fixed15k
+    \
+
+    SOFT_TRAIN_CONFIG=tinystories_lm_softdistill_local_bpe_1024_seq256_nl4_do00_fixed15k
+    \
+
+    EXPERT_CONFIG=expert_trajectory_local_bpe_1024_seq256_nl4_do00_fixed15k \
+
+    EXPERT_PATH=saved/expert_trajectories/tiny_lm_local_bpe_1024_seq256_nl4_do00_fixed15k_adam_sp5_lr001/expert_checkpoints.pth
+    \
+
+    DATA_PATH=data/tinystories/tinystories_train_first15k.txt \
+
+    TRAIN_EPOCHS=15 \
+
+    TRAIN_EPOCH_LEN=64 \
+
+    TRAIN_LR_STEP_SIZE=64 \
+
+    DISTILL_STEP_VALUES=400 \
+
+    K_VALUES="4 8 16 32 64 128 256" \
+
+    K_TAG=k4_8_16_32_64_128_256 \
+
+    ./scripts/run_tm_topk_gumbel_sweep.sh'
+  source_results_csvs:
+  - saved/results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256/tm_topk_gumbel_results.csv
+  source_best_csvs:
+  - saved/results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256/best_res.csv
+  source_eval_roots:
+  - saved/eval_tm_topk_gumbel_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256
+model:
+  _target_: src.model.TinyTransformerLM
+  vocab_size: 1024
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+  pad_token_id: 0
+trainer:
+  log_step: 50
+  n_epochs: 15
+  epoch_len: 64
+  device_tensors:
+  - input_ids
+  - labels
+  - target_probs
+  - attention_mask
+  resume_from: null
+  device: auto
+  override: true
+  monitor: min val_Perplexity
+  save_period: 1
+  early_stop: 15
+  save_dir: saved/eval_tm_topk_gumbel_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256
+  seed: 1
+  max_grad_norm: 1.0
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 0.0003
+  weight_decay: 0.01
+dataloader:
+  _target_: torch.utils.data.DataLoader
+  batch_size: 8
+  num_workers: 0
+  pin_memory: false
+distillation:
+  objective: trajectory_matching
+  inner_lr: 0.01
+  outer_batches: 4
+  entropy_weight: 0.0
+  n_steps: 400
+  log_step: 40
+  save_period: 50
+  synthetic:
+    num_sequences: 256
+    sequence_length: 256
+    vocab_size: 1024
+    batch_size: 16
+    temperature: 1.0
+    init_std: 0.02
+    init_from_real: true
+    init_confidence: 12.5
+    parameterization: topk
+    topk: 16

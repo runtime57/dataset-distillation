@@ -1,0 +1,16 @@
+| series_source | distill_steps | par | k | best_epoch | val_ppl | test_ppl |
+| --- | --- | --- | --- | --- | --- | --- |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 4 | 10 | 61.868 | 59.499 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 8 | 9 | 61.001 | 58.954 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 16 | 10 | 60.738 | 58.172 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 32 | 10 | 61.23 | 58.739 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 64 | 11 | 62.088 | 58.799 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 128 | 10 | 61.53 | 58.762 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | topk | 256 | 10 | 61.16 | 58.433 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 4 | 10 | 60.994 | 58.357 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 8 | 10 | 60.994 | 58.357 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 16 | 10 | 60.995 | 58.357 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 32 | 10 | 60.995 | 58.358 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 64 | 10 | 60.996 | 58.359 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 128 | 10 | 60.997 | 58.361 |
+| results_seq256_nl4_do00_fixed15k_expertadam_distil400_e15_k4_8_16_32_64_128_256 | 400 | gumbel | 256 | 10 | 61.001 | 58.365 |

@@ -1,0 +1,1 @@
+bash runs/results_tm_series_seq256_nl4_do00_fixed15k_expertadam_distil400_e15.py/run_series.sh

@@ -1,0 +1,1 @@
+bash runs/results_tm_series_seq128_nl2_do01_e15_distilmulti.py/run_series.sh
