@@ -1,0 +1,57 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - writer: noop
+  - metrics: language_modeling
+  - datasets: tinystories_softdistill_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+writer:
+  run_name: "softdistill256_local_bpe_1024_matched"
+
+datasets:
+  train:
+    checkpoint_path: null
+  val:
+    sequence_length: ${model.max_seq_len}
+    local_text_path: "data/tinystories_train_15k.txt"
+  test:
+    sequence_length: ${model.max_seq_len}
+    local_text_path: "data/tinystories_train_15k.txt"
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 0.0035
+  weight_decay: 1.1
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  gamma: 0.92
+  step_size: ${trainer.epoch_len}
+
+loss_function:
+  _target_: src.loss.LanguageModelingLoss
+
+trainer:
+  log_step: 64
+  n_epochs: 8
+  epoch_len: 64
+  device_tensors: ["input_ids", "labels", "input_probs", "target_probs", "attention_mask"]
+  resume_from: null
+  device: auto
+  override: true
+  monitor: "min val_Perplexity"
+  save_period: 9999
+  early_stop: 2
+  save_dir: "saved/eval_matched"
+  seed: 1
+  max_grad_norm: 1.0
