@@ -1,0 +1,7 @@
+results/runs/results_gm_matched_gumbel_topk8_ic10/config.yaml
+PPL: val=45.7030, test=43.5000
+Sample 1: Anna heard a small bird singing near her window. He is very happy and they saw the best friends, he was scared. "I'm so much!" Ben said. I want to do not listen. We can go."
+
+Sample 2: A puppy was waiting by the door when Mia came home. She said, "I'm sorry to do you!" Lily and the park with her mommy. It are very happy. They had a big smile on the bows.
+
+Sample 3: Tom helped his friend pick up the toys after the game. "I love you, we can go!" Benny. They were so funny said. But Ben nodded and make them all day on. He saw a big hug.

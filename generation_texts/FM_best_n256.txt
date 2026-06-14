@@ -1,0 +1,7 @@
+results/runs/results_fm_matched_n256/config.yaml
+PPL: val=177.3093, test=170.8740
+Sample 1: Lily found a little key in the garden. She ran to show her mom. The big child, there was very that she he could could help with the rued and home.
+
+Sample 2: Ben wanted to give his dad a drawing before bed. One day, there was stret curiousa yellionion the the ground He felt very happy and Miaey he was a big said.
+
+Sample 3: A puppy was waiting by the door when Mia came home. She flow flow floware to help walking child tatingertsta. He loved to be again, there was a dress rullooames and

@@ -1,0 +1,7 @@
+results/runs/results_one_step_matched_gumbel32_n256/config.yaml
+PPL: val=45.7722, test=43.5407
+Sample 1: Tom helped his friend pick up the toys after the game. "I love you, we can be careful and Ben said, I want to read?" Tom smiled at them in the sky was a new friends."
+
+Sample 2: Lily found a little key in the garden. She ran to show her mom. The day, they saw a big party was so happy and went on, "I want to make them together." When it for her friends and said, Lily.
+
+Sample 3: A puppy was waiting by the door when Mia came home. She saw a smile on, they can play with her toys and Ben said, "What is to make you." Lily's friend. They are very good friends.

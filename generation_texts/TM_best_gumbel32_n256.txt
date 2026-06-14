@@ -1,0 +1,7 @@
+results/runs/results_tm_matched_gumbel32_n256/config.yaml
+PPL: val=45.8169, test=43.5795
+Sample 1: Lily found a little key in the garden. She ran to show her mom. One day, they went to play with her friends were so happy and saw a small house, "You'reakes!" Ben said, "I can be careful."
+
+Sample 2: Tom helped his friend pick up the toys after the game. He said, "We can do you." Lila and Ben did not want to play with a big box of them. They put the park. It was sad.
+
+Sample 3: Lily found a little key in the garden. She ran to show her mom. "Let's mommy said, I'm fun!" One day on the little girl had a good friends and looked at each others and saw something special.
