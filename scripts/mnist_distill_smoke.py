@@ -78,6 +78,12 @@ class SyntheticMNIST(nn.Module):
     def lrs(self):
         return F.softplus(self.raw_lrs)
 
+    @torch.no_grad()
+    def initialize_from_images(self, images):
+        clamped = images.clamp(1e-4, 1.0 - 1e-4)
+        logits = torch.logit(clamped)
+        self.images.copy_(logits)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -98,6 +104,7 @@ def parse_args():
     parser.add_argument("--init-batch", type=int, default=2)
     parser.add_argument("--synthetic-lr", type=float, default=0.001)
     parser.add_argument("--distilled-lr-init", type=float, default=0.02)
+    parser.add_argument("--init-mode", choices=["noise", "real"], default="noise")
     parser.add_argument("--expert-steps", type=int, default=60)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", default="auto")
@@ -157,6 +164,18 @@ def subset_by_seed(images, labels, size, seed):
     generator = torch.Generator().manual_seed(seed)
     indices = torch.randperm(len(labels), generator=generator)[:size]
     return images[indices], labels[indices]
+
+
+def balanced_real_init(images, labels, n_steps):
+    selected = []
+    for _step in range(n_steps):
+        step_images = []
+        for class_index in range(10):
+            class_indices = (labels == class_index).nonzero(as_tuple=False).flatten()
+            source_index = class_indices[_step % len(class_indices)]
+            step_images.append(images[source_index])
+        selected.append(torch.stack(step_images))
+    return torch.stack(selected)
 
 
 def cycle_loader(loader):
@@ -488,6 +507,9 @@ def main():
         images_per_step=10,
         lr_init=args.distilled_lr_init,
     ).to(device)
+    if args.init_mode == "real":
+        init_images = balanced_real_init(train_x, train_y, args.distill_steps).to(device)
+        synthetic.initialize_from_images(init_images)
     optimizer = torch.optim.Adam(synthetic.parameters(), lr=args.synthetic_lr)
     expert_trajectory = None
     if args.objective == "trajectory_matching":
@@ -546,13 +568,14 @@ def main():
                 for key, value in synthetic.state_dict().items()
             }
         row = {
-            "step": step,
-            "objective": args.objective,
-            "train_loss": train_loss_value,
-            "inner_loss": inner_loss_value,
-            "best_loss": best_loss,
-            "distilled_lr_mean": float(synthetic.lrs().mean().detach().cpu()),
-        }
+        "step": step,
+        "objective": args.objective,
+        "train_loss": train_loss_value,
+        "inner_loss": inner_loss_value,
+        "best_loss": best_loss,
+        "distilled_lr_mean": float(synthetic.lrs().mean().detach().cpu()),
+        "synthetic_pixel_std": float(synthetic.images.sigmoid().std().detach().cpu()),
+    }
         with metrics_path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(row, sort_keys=True) + "\n")
         progress.set_postfix(loss=f"{train_loss_value:.4f}", best=f"{best_loss:.4f}")

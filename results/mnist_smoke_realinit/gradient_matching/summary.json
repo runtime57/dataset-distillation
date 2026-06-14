@@ -1,0 +1,9 @@
+{
+  "best_step": 43,
+  "best_train_loss": 0.5008711814880371,
+  "eval_accuracy_mean": 0.4125,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 1.8467591094970703,
+  "image_grid": "results/mnist_smoke_realinit/gradient_matching/synthetic_grid.png",
+  "objective": "gradient_matching"
+}

@@ -1,0 +1,9 @@
+{
+  "best_step": 27,
+  "best_train_loss": 0.00017219585424754769,
+  "eval_accuracy_mean": 0.3665,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 1.8910187301635741,
+  "image_grid": "results/mnist_smoke_realinit/feature_matching/synthetic_grid.png",
+  "objective": "feature_matching"
+}
