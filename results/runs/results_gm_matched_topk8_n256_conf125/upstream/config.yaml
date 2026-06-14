@@ -1,0 +1,104 @@
+model:
+  _target_: src.model.TinyTransformerLM
+  vocab_size: 1024
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+  pad_token_id: 0
+datasets:
+  train:
+    _target_: src.datasets.TinyStoriesLocalBPEDataset
+    split: train
+    tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+    pad_token: '[PAD]'
+    eos_token: '[EOS]'
+    unk_token: '[UNK]'
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 0
+    max_texts: 10000
+    max_sequences: null
+    streaming: true
+    hf_cache_dir: null
+    data_dir: data/tinystories_local_bpe_1024
+    local_text_path: data/tinystories_train_15k.txt
+    use_cache: true
+  val:
+    _target_: src.datasets.TinyStoriesLocalBPEDataset
+    split: train
+    tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+    pad_token: '[PAD]'
+    eos_token: '[EOS]'
+    unk_token: '[UNK]'
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 10000
+    max_texts: 3000
+    max_sequences: null
+    streaming: true
+    hf_cache_dir: null
+    data_dir: data/tinystories_local_bpe_1024
+    local_text_path: data/tinystories_train_15k.txt
+    use_cache: true
+  test:
+    _target_: src.datasets.TinyStoriesLocalBPEDataset
+    split: train
+    tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+    pad_token: '[PAD]'
+    eos_token: '[EOS]'
+    unk_token: '[UNK]'
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 13000
+    max_texts: 2000
+    max_sequences: null
+    streaming: true
+    hf_cache_dir: null
+    data_dir: data/tinystories_local_bpe_1024
+    local_text_path: data/tinystories_train_15k.txt
+    use_cache: true
+dataloader:
+  _target_: torch.utils.data.DataLoader
+  batch_size: 8
+  num_workers: 2
+  pin_memory: true
+transforms:
+  batch_transforms:
+    train: null
+    inference: null
+  instance_transforms:
+    train: null
+    inference: null
+distillation:
+  seed: 1
+  device: cuda
+  run_name: results_gm_matched_topk8_n256_conf125_distill
+  save_dir: results/runs/results_gm_matched_topk8_n256_conf125/upstream
+  override: true
+  objective: gradient_matching
+  n_steps: 400
+  log_step: 40
+  save_period: 50
+  save_step_checkpoints: false
+  real_split: train
+  outer_batches: 4
+  inner_lr: 0.001
+  learn_inner_lr: false
+  min_inner_lr: null
+  max_inner_lr: null
+  entropy_weight: 0.0
+  max_grad_norm: 1.0
+  synthetic:
+    num_sequences: 256
+    sequence_length: ${model.max_seq_len}
+    vocab_size: ${model.vocab_size}
+    batch_size: 16
+    temperature: 1.0
+    init_std: 0.02
+    init_from_real: true
+    init_confidence: 12.5
+    parameterization: topk
+    topk: 8
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.01

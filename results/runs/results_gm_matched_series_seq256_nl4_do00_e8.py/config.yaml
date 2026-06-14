@@ -1,0 +1,20 @@
+series:
+  name: results_gm_matched_series_seq256_nl4_do00_e8.py
+  seq_len: 256
+  model_tag: nl4_do00_matched
+  parameterizations:
+  - topk
+  - gumbel
+  k_values:
+  - '8'
+  - '32'
+  best_overall:
+    parameterization: gumbel
+    k: 8
+    best_epoch: 4
+    val_ppl: 45.7030479989397
+    test_ppl: 43.50003413518492
+  source_eval_runs:
+  - results_gm_matched_gumbel_topk8_ic10
+  - results_gm_matched_gumbel32_n256_conf125
+  - results_gm_matched_topk8_n256_conf125

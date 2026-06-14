@@ -1,0 +1,4 @@
+parameterization,k,init_confidence,distill_steps,distill_run,eval_run,best_epoch,val_perplexity,test_perplexity
+topk_gumbel,8,10.0,100,results_gm_matched_gumbel_topk8_ic10,results_gm_matched_gumbel_topk8_ic10,4,45.7030479989397,43.50003413518492
+topk_gumbel,32,12.5,400,results_gm_matched_gumbel32_n256_conf125,results_gm_matched_gumbel32_n256_conf125,4,45.78666444873443,43.552013318673026
+topk,8,12.5,400,results_gm_matched_topk8_n256_conf125,results_gm_matched_topk8_n256_conf125,4,46.99779161081786,45.21514390659788

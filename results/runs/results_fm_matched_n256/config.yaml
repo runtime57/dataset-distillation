@@ -1,0 +1,104 @@
+model:
+  _target_: src.model.TinyTransformerLM
+  vocab_size: 1024
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+  pad_token_id: 0
+writer:
+  _target_: src.logger.NoOpWriter
+  run_name: results_fm_matched_n256
+  loss_names:
+  - loss
+  log_checkpoints: false
+  id_length: 8
+  run_id: vuw49l0o
+metrics:
+  train:
+  - _target_: src.metrics.PerplexityMetric
+    name: Perplexity
+  inference:
+  - _target_: src.metrics.PerplexityMetric
+    name: Perplexity
+datasets:
+  train:
+    _target_: src.datasets.SoftTokenCheckpointDataset
+    checkpoint_path: results/runs/results_fm_matched_n256/upstream/full_soft_tokens.pth
+    temperature: 1.0
+    max_sequences: null
+  val:
+    _target_: src.datasets.TinyStoriesLocalBPEDataset
+    split: train
+    tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+    pad_token: '[PAD]'
+    eos_token: '[EOS]'
+    unk_token: '[UNK]'
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 10000
+    max_texts: 3000
+    max_sequences: null
+    streaming: true
+    hf_cache_dir: null
+    data_dir: data/tinystories_local_bpe_1024
+    local_text_path: data/tinystories_train_15k.txt
+    use_cache: true
+  test:
+    _target_: src.datasets.TinyStoriesLocalBPEDataset
+    split: train
+    tokenizer_path: artifacts/tokenizers/tinystories_bpe_1024/tokenizer.json
+    pad_token: '[PAD]'
+    eos_token: '[EOS]'
+    unk_token: '[UNK]'
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 13000
+    max_texts: 2000
+    max_sequences: null
+    streaming: true
+    hf_cache_dir: null
+    data_dir: data/tinystories_local_bpe_1024
+    local_text_path: data/tinystories_train_15k.txt
+    use_cache: true
+dataloader:
+  _target_: torch.utils.data.DataLoader
+  batch_size: 16
+  num_workers: 2
+  pin_memory: true
+transforms:
+  batch_transforms:
+    train: null
+    inference: null
+  instance_transforms:
+    train: null
+    inference: null
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 0.0035
+  weight_decay: 1.1
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  gamma: 0.92
+  step_size: ${trainer.epoch_len}
+loss_function:
+  _target_: src.loss.LanguageModelingLoss
+trainer:
+  log_step: 64
+  n_epochs: 8
+  epoch_len: 64
+  device_tensors:
+  - input_ids
+  - labels
+  - input_probs
+  - target_probs
+  - attention_mask
+  resume_from: null
+  device: cuda
+  override: true
+  monitor: min val_Perplexity
+  save_period: 9999
+  early_stop: 2
+  save_dir: results/runs/results_fm_matched_n256
+  seed: 1
+  max_grad_norm: 1.0

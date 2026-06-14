@@ -1,0 +1,22 @@
+diff --git a/src/compute_expert_trajectory.py b/src/compute_expert_trajectory.py
+index 7c441c7..d4a5bf0 100644
+--- a/src/compute_expert_trajectory.py
++++ b/src/compute_expert_trajectory.py
+@@ -1,7 +1,17 @@
+ import warnings
++from pathlib import Path
++import sys
+ 
+ import hydra
+ 
++ROOT = Path(__file__).resolve().parents[1]
++SCRIPT_DIR = Path(__file__).resolve().parent
++sys.path = [
++    path for path in sys.path if Path(path or ".").resolve() != SCRIPT_DIR.resolve()
++]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
+ from src.distillation.expert import run_expert_trajectory
+ 
+ warnings.filterwarnings("ignore", category=UserWarning)
