@@ -1,0 +1,2 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+feature_matching,27,0.0023428904823958874,0.145,0.0,2.2892318115234374,results/mnist_smoke_fm_classwise_realinit_100_check/feature_matching/synthetic_grid.png

@@ -1,0 +1,9 @@
+{
+  "best_step": 299,
+  "best_train_loss": 1.0885878801345825,
+  "eval_accuracy_mean": 0.137,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.2903781509399415,
+  "image_grid": "results/mnist_long_realinit_tm_300_check/trajectory_matching/synthetic_grid.png",
+  "objective": "trajectory_matching"
+}
