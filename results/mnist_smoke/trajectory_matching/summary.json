@@ -1,0 +1,9 @@
+{
+  "best_step": 13,
+  "best_train_loss": 1.0082749128341675,
+  "eval_accuracy_mean": 0.1215,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.306904655456543,
+  "image_grid": "results/mnist_smoke/trajectory_matching/synthetic_grid.png",
+  "objective": "trajectory_matching"
+}

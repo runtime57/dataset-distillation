@@ -1,0 +1,5 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+feature_matching,4,0.002621888415887952,0.121,0.0,2.3068039169311523,results/mnist_smoke/feature_matching/synthetic_grid.png
+gradient_matching,9,0.6819000840187073,0.121,0.0,2.306775650024414,results/mnist_smoke/gradient_matching/synthetic_grid.png
+trajectory_matching,13,1.0082749128341675,0.1215,0.0,2.306904655456543,results/mnist_smoke/trajectory_matching/synthetic_grid.png
+one_step,8,2.2958478927612305,0.121,0.0,2.3067474136352537,results/mnist_smoke/one_step/synthetic_grid.png

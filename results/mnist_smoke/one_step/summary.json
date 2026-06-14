@@ -1,0 +1,9 @@
+{
+  "best_step": 8,
+  "best_train_loss": 2.2958478927612305,
+  "eval_accuracy_mean": 0.121,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.3067474136352537,
+  "image_grid": "results/mnist_smoke/one_step/synthetic_grid.png",
+  "objective": "one_step"
+}
