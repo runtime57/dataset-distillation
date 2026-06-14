@@ -1,0 +1,9 @@
+{
+  "best_step": 551,
+  "best_train_loss": 0.7684866189956665,
+  "eval_accuracy_mean": 0.11116000000000001,
+  "eval_accuracy_std": 0.016043141836934557,
+  "eval_loss_mean": 2.3013866610717773,
+  "image_grid": "results/mnist_paperlike_uniform/gradient_matching/synthetic_grid.png",
+  "objective": "gradient_matching"
+}

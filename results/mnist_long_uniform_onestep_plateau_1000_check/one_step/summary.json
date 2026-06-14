@@ -1,0 +1,9 @@
+{
+  "best_step": 785,
+  "best_train_loss": 2.28176212310791,
+  "eval_accuracy_mean": 0.1265,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.303551010131836,
+  "image_grid": "results/mnist_long_uniform_onestep_plateau_1000_check/one_step/synthetic_grid.png",
+  "objective": "one_step"
+}

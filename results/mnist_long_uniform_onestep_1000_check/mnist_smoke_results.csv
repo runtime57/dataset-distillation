@@ -1,0 +1,2 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+one_step,785,2.2630786895751953,0.15,0.0,2.2982262191772462,results/mnist_long_uniform_onestep_1000_check/one_step/synthetic_grid.png

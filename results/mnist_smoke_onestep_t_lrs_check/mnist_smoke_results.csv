@@ -1,0 +1,2 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+one_step,8,2.2958879470825195,0.121,0.0,2.306746917724609,results/mnist_smoke_onestep_t_lrs_check/one_step/synthetic_grid.png

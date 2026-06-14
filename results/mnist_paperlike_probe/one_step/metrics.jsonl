@@ -1,0 +1,2 @@
+{"best_loss": 2.308566093444824, "distilled_lr_mean": 0.020003966987133026, "inner_loss": 2.307187795639038, "objective": "one_step", "step": 1, "synthetic_pixel_std": 0.2879697382450104, "train_loss": 2.308566093444824}
+{"best_loss": 2.298521041870117, "distilled_lr_mean": 0.020009923726320267, "inner_loss": 2.3033454418182373, "objective": "one_step", "step": 2, "synthetic_pixel_std": 0.28797033429145813, "train_loss": 2.298521041870117}

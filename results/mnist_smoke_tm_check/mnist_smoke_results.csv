@@ -1,0 +1,2 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+trajectory_matching,13,1.008275032043457,0.123,0.0,2.3068604049682615,results/mnist_smoke_tm_check/trajectory_matching/synthetic_grid.png

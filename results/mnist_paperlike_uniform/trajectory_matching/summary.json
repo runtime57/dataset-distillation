@@ -1,0 +1,9 @@
+{
+  "best_step": 934,
+  "best_train_loss": 0.6108635663986206,
+  "eval_accuracy_mean": 0.11464,
+  "eval_accuracy_std": 0.012471022411975691,
+  "eval_loss_mean": 2.301601290664673,
+  "image_grid": "results/mnist_paperlike_uniform/trajectory_matching/synthetic_grid.png",
+  "objective": "trajectory_matching"
+}

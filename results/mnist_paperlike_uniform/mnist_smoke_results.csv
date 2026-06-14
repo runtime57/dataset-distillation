@@ -1,0 +1,5 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+feature_matching,120,0.0005084651056677103,0.10644,0.013076023860486032,2.3033045849609373,results/mnist_paperlike_uniform/feature_matching/synthetic_grid.png
+gradient_matching,551,0.7684866189956665,0.11116000000000001,0.016043141836934557,2.3013866610717773,results/mnist_paperlike_uniform/gradient_matching/synthetic_grid.png
+trajectory_matching,934,0.6108635663986206,0.11464,0.012471022411975691,2.301601290664673,results/mnist_paperlike_uniform/trajectory_matching/synthetic_grid.png
+one_step,988,1.9737424850463867,0.33808,0.07048002270147194,2.046778952293396,results/mnist_paperlike_uniform/one_step/synthetic_grid.png
