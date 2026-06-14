@@ -1,0 +1,70 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - writer: noop
+  - metrics: language_modeling
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+writer:
+  run_name: "real_1krows_seq256_bpe1024"
+
+datasets:
+  train:
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 0
+    max_texts: 1000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_1k.txt"
+    use_cache: true
+  val:
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 10000
+    max_texts: 3000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+    use_cache: true
+  test:
+    sequence_length: ${model.max_seq_len}
+    skip_texts: 13000
+    max_texts: 2000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+    use_cache: true
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3e-4
+  weight_decay: 0.01
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  gamma: 0.95
+  step_size: ${trainer.epoch_len}
+
+loss_function:
+  _target_: src.loss.LanguageModelingLoss
+
+trainer:
+  log_step: 50
+  n_epochs: 20
+  epoch_len: 72
+  device_tensors: ["input_ids", "labels", "attention_mask"]
+  resume_from: null
+  device: auto
+  override: true
+  monitor: "min val_Perplexity"
+  save_period: 9999
+  early_stop: 5
+  save_dir: "saved/real_1k"
+  seed: 1
+  max_grad_norm: 1.0

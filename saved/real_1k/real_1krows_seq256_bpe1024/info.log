@@ -1,0 +1,206 @@
+2026-06-14 21:23:17,740 - train - INFO - TinyTransformerLM(
+  (token_embedding): Embedding(1024, 128, padding_idx=0)
+  (position_embedding): Embedding(256, 128)
+  (transformer): ModuleList(
+    (0-3): 4 x TransformerBlock(
+      (attention_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True, bias=True)
+      (attention): CausalSelfAttention(
+        (qkv): Linear(in_features=128, out_features=384, bias=True)
+        (output_projection): Linear(in_features=128, out_features=128, bias=True)
+        (dropout): Dropout(p=0.0, inplace=False)
+      )
+      (mlp_norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True, bias=True)
+      (mlp): Sequential(
+        (0): Linear(in_features=128, out_features=512, bias=True)
+        (1): GELU(approximate='none')
+        (2): Dropout(p=0.0, inplace=False)
+        (3): Linear(in_features=512, out_features=128, bias=True)
+        (4): Dropout(p=0.0, inplace=False)
+      )
+    )
+  )
+  (norm): LayerNorm((128,), eps=1e-05, elementwise_affine=True, bias=True)
+  (output_projection): Linear(in_features=128, out_features=1024, bias=False)
+)
+All parameters: 957184
+Trainable parameters: 957184
+2026-06-14 21:23:29,019 - train - INFO -     epoch          : 1
+2026-06-14 21:23:29,020 - train - INFO -     loss           : 5.938051429059771
+2026-06-14 21:23:29,020 - train - INFO -     grad_norm      : 0.6415564753115177
+2026-06-14 21:23:29,020 - train - INFO -     Perplexity     : 379.19532019991783
+2026-06-14 21:23:29,020 - train - INFO -     val_loss       : 5.347801848045457
+2026-06-14 21:23:29,020 - train - INFO -     val_Perplexity : 210.14791613180105
+2026-06-14 21:23:29,020 - train - INFO -     test_loss      : 5.31237437124966
+2026-06-14 21:23:29,020 - train - INFO -     test_Perplexity: 202.8312537932533
+2026-06-14 21:23:29,075 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:23:40,023 - train - INFO -     epoch          : 2
+2026-06-14 21:23:40,023 - train - INFO -     loss           : 4.986045095655653
+2026-06-14 21:23:40,023 - train - INFO -     grad_norm      : 0.49862668332126403
+2026-06-14 21:23:40,023 - train - INFO -     Perplexity     : 146.35645161867467
+2026-06-14 21:23:40,023 - train - INFO -     val_loss       : 4.679634876160825
+2026-06-14 21:23:40,023 - train - INFO -     val_Perplexity : 107.73998515238625
+2026-06-14 21:23:40,023 - train - INFO -     test_loss      : 4.6369596338596475
+2026-06-14 21:23:40,023 - train - INFO -     test_Perplexity: 103.23001294320002
+2026-06-14 21:23:40,078 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:23:51,108 - train - INFO -     epoch          : 3
+2026-06-14 21:23:51,108 - train - INFO -     loss           : 4.477448218398624
+2026-06-14 21:23:51,108 - train - INFO -     grad_norm      : 0.5051249199443393
+2026-06-14 21:23:51,108 - train - INFO -     Perplexity     : 88.00980409109373
+2026-06-14 21:23:51,108 - train - INFO -     val_loss       : 4.343791441894821
+2026-06-14 21:23:51,109 - train - INFO -     val_Perplexity : 77.0068148292497
+2026-06-14 21:23:51,109 - train - INFO -     test_loss      : 4.29796685977858
+2026-06-14 21:23:51,109 - train - INFO -     test_Perplexity: 73.55010390644823
+2026-06-14 21:23:51,160 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:02,081 - train - INFO -     epoch          : 4
+2026-06-14 21:24:02,081 - train - INFO -     loss           : 4.200211054748959
+2026-06-14 21:24:02,081 - train - INFO -     grad_norm      : 0.5610653232369158
+2026-06-14 21:24:02,081 - train - INFO -     Perplexity     : 66.70040699312798
+2026-06-14 21:24:02,081 - train - INFO -     val_loss       : 4.152498853150138
+2026-06-14 21:24:02,081 - train - INFO -     val_Perplexity : 63.59953898307023
+2026-06-14 21:24:02,081 - train - INFO -     test_loss      : 4.104749379514837
+2026-06-14 21:24:02,082 - train - INFO -     test_Perplexity: 60.62754813789122
+2026-06-14 21:24:02,134 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:12,946 - train - INFO -     epoch          : 5
+2026-06-14 21:24:12,947 - train - INFO -     loss           : 4.024300740824805
+2026-06-14 21:24:12,947 - train - INFO -     grad_norm      : 0.6031491772996055
+2026-06-14 21:24:12,947 - train - INFO -     Perplexity     : 55.941177720069724
+2026-06-14 21:24:12,947 - train - INFO -     val_loss       : 4.025874115279501
+2026-06-14 21:24:12,947 - train - INFO -     val_Perplexity : 56.035831676201376
+2026-06-14 21:24:12,947 - train - INFO -     test_loss      : 3.9759598621705763
+2026-06-14 21:24:12,947 - train - INFO -     test_Perplexity: 53.30125421699127
+2026-06-14 21:24:12,997 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:23,773 - train - INFO -     epoch          : 6
+2026-06-14 21:24:23,773 - train - INFO -     loss           : 3.89796589811643
+2026-06-14 21:24:23,773 - train - INFO -     grad_norm      : 0.6254357993602753
+2026-06-14 21:24:23,773 - train - INFO -     Perplexity     : 49.302061624547065
+2026-06-14 21:24:23,773 - train - INFO -     val_loss       : 3.9376145900708237
+2026-06-14 21:24:23,773 - train - INFO -     val_Perplexity : 51.30225489575206
+2026-06-14 21:24:23,773 - train - INFO -     test_loss      : 3.8889520249399196
+2026-06-14 21:24:23,773 - train - INFO -     test_Perplexity: 48.85965598334158
+2026-06-14 21:24:23,824 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:34,639 - train - INFO -     epoch          : 7
+2026-06-14 21:24:34,639 - train - INFO -     loss           : 3.806145691209369
+2026-06-14 21:24:34,639 - train - INFO -     grad_norm      : 0.6667594189445177
+2026-06-14 21:24:34,639 - train - INFO -     Perplexity     : 44.97675007303909
+2026-06-14 21:24:34,639 - train - INFO -     val_loss       : 3.86878059825626
+2026-06-14 21:24:34,639 - train - INFO -     val_Perplexity : 47.88905921006611
+2026-06-14 21:24:34,639 - train - INFO -     test_loss      : 3.818091225461895
+2026-06-14 21:24:34,639 - train - INFO -     test_Perplexity: 45.51724319398959
+2026-06-14 21:24:34,689 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:46,506 - train - INFO -     epoch          : 8
+2026-06-14 21:24:46,507 - train - INFO -     loss           : 3.7289542820718555
+2026-06-14 21:24:46,507 - train - INFO -     grad_norm      : 0.6885958934823672
+2026-06-14 21:24:46,507 - train - INFO -     Perplexity     : 41.6355463540456
+2026-06-14 21:24:46,507 - train - INFO -     val_loss       : 3.8158172804032455
+2026-06-14 21:24:46,507 - train - INFO -     val_Perplexity : 45.418976126360405
+2026-06-14 21:24:46,507 - train - INFO -     test_loss      : 3.7658331232006046
+2026-06-14 21:24:46,507 - train - INFO -     test_Perplexity: 43.19968152863722
+2026-06-14 21:24:46,559 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:24:58,462 - train - INFO -     epoch          : 9
+2026-06-14 21:24:58,463 - train - INFO -     loss           : 3.6580467455916934
+2026-06-14 21:24:58,463 - train - INFO -     grad_norm      : 0.7311843434969584
+2026-06-14 21:24:58,463 - train - INFO -     Perplexity     : 38.78551086576544
+2026-06-14 21:24:58,463 - train - INFO -     val_loss       : 3.770266667361508
+2026-06-14 21:24:58,463 - train - INFO -     val_Perplexity : 43.39696615778774
+2026-06-14 21:24:58,463 - train - INFO -     test_loss      : 3.71760453334471
+2026-06-14 21:24:58,463 - train - INFO -     test_Perplexity: 41.16566492691533
+2026-06-14 21:24:58,514 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:25:10,388 - train - INFO -     epoch          : 10
+2026-06-14 21:25:10,389 - train - INFO -     loss           : 3.607750051551395
+2026-06-14 21:25:10,389 - train - INFO -     grad_norm      : 0.7607346350948015
+2026-06-14 21:25:10,389 - train - INFO -     Perplexity     : 36.8829745975408
+2026-06-14 21:25:10,389 - train - INFO -     val_loss       : 3.7376924318159928
+2026-06-14 21:25:10,389 - train - INFO -     val_Perplexity : 42.005634946539665
+2026-06-14 21:25:10,389 - train - INFO -     test_loss      : 3.68681331394481
+2026-06-14 21:25:10,390 - train - INFO -     test_Perplexity: 39.91743971316782
+2026-06-14 21:25:10,443 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:25:21,775 - train - INFO -     epoch          : 11
+2026-06-14 21:25:21,776 - train - INFO -     loss           : 3.5538657473193274
+2026-06-14 21:25:21,776 - train - INFO -     grad_norm      : 0.8101865765121248
+2026-06-14 21:25:21,776 - train - INFO -     Perplexity     : 34.948157437022445
+2026-06-14 21:25:21,776 - train - INFO -     val_loss       : 3.7102625358726176
+2026-06-14 21:25:21,776 - train - INFO -     val_Perplexity : 40.86869761902393
+2026-06-14 21:25:21,776 - train - INFO -     test_loss      : 3.659041724237455
+2026-06-14 21:25:21,776 - train - INFO -     test_Perplexity: 38.824120825699396
+2026-06-14 21:25:21,826 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:25:32,645 - train - INFO -     epoch          : 12
+2026-06-14 21:25:32,645 - train - INFO -     loss           : 3.512388563818402
+2026-06-14 21:25:32,645 - train - INFO -     grad_norm      : 0.8402998323241869
+2026-06-14 21:25:32,645 - train - INFO -     Perplexity     : 33.528256597325026
+2026-06-14 21:25:32,645 - train - INFO -     val_loss       : 3.6820556970569194
+2026-06-14 21:25:32,645 - train - INFO -     val_Perplexity : 39.73291406099825
+2026-06-14 21:25:32,645 - train - INFO -     test_loss      : 3.631212299372874
+2026-06-14 21:25:32,645 - train - INFO -     test_Perplexity: 37.758563565011414
+2026-06-14 21:25:32,695 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:25:43,540 - train - INFO -     epoch          : 13
+2026-06-14 21:25:43,540 - train - INFO -     loss           : 3.468741993109385
+2026-06-14 21:25:43,540 - train - INFO -     grad_norm      : 0.8688285201787949
+2026-06-14 21:25:43,540 - train - INFO -     Perplexity     : 32.09633962016
+2026-06-14 21:25:43,540 - train - INFO -     val_loss       : 3.666453596539972
+2026-06-14 21:25:43,540 - train - INFO -     val_Perplexity : 39.11742138483102
+2026-06-14 21:25:43,541 - train - INFO -     test_loss      : 3.614592266731522
+2026-06-14 21:25:43,541 - train - INFO -     test_Perplexity: 37.13620117366332
+2026-06-14 21:25:43,591 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:25:54,441 - train - INFO -     epoch          : 14
+2026-06-14 21:25:54,441 - train - INFO -     loss           : 3.432667682568232
+2026-06-14 21:25:54,441 - train - INFO -     grad_norm      : 0.9217146237691244
+2026-06-14 21:25:54,442 - train - INFO -     Perplexity     : 30.9591217963497
+2026-06-14 21:25:54,442 - train - INFO -     val_loss       : 3.6437962089104676
+2026-06-14 21:25:54,442 - train - INFO -     val_Perplexity : 38.241243579335084
+2026-06-14 21:25:54,442 - train - INFO -     test_loss      : 3.592136254926928
+2026-06-14 21:25:54,442 - train - INFO -     test_Perplexity: 36.3115638872475
+2026-06-14 21:25:54,493 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:26:05,328 - train - INFO -     epoch          : 15
+2026-06-14 21:26:05,328 - train - INFO -     loss           : 3.398073739475674
+2026-06-14 21:26:05,328 - train - INFO -     grad_norm      : 0.9431075528264046
+2026-06-14 21:26:05,328 - train - INFO -     Perplexity     : 29.90643693924305
+2026-06-14 21:26:05,329 - train - INFO -     val_loss       : 3.6291379329717555
+2026-06-14 21:26:05,329 - train - INFO -     val_Perplexity : 37.68530267254121
+2026-06-14 21:26:05,329 - train - INFO -     test_loss      : 3.5771855448378997
+2026-06-14 21:26:05,329 - train - INFO -     test_Perplexity: 35.77271832163409
+2026-06-14 21:26:05,380 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:26:16,249 - train - INFO -     epoch          : 16
+2026-06-14 21:26:16,249 - train - INFO -     loss           : 3.3637905750009747
+2026-06-14 21:26:16,249 - train - INFO -     grad_norm      : 0.9626843002107408
+2026-06-14 21:26:16,249 - train - INFO -     Perplexity     : 28.898525556220267
+2026-06-14 21:26:16,249 - train - INFO -     val_loss       : 3.6159856726208006
+2026-06-14 21:26:16,249 - train - INFO -     val_Perplexity : 37.192701687339174
+2026-06-14 21:26:16,249 - train - INFO -     test_loss      : 3.563750018878859
+2026-06-14 21:26:16,250 - train - INFO -     test_Perplexity: 35.29530735130731
+2026-06-14 21:26:16,298 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:26:27,303 - train - INFO -     epoch          : 17
+2026-06-14 21:26:27,303 - train - INFO -     loss           : 3.336794296900431
+2026-06-14 21:26:27,303 - train - INFO -     grad_norm      : 0.9810498630007108
+2026-06-14 21:26:27,303 - train - INFO -     Perplexity     : 28.128809406030946
+2026-06-14 21:26:27,303 - train - INFO -     val_loss       : 3.607018499012807
+2026-06-14 21:26:27,304 - train - INFO -     val_Perplexity : 36.860722309644004
+2026-06-14 21:26:27,304 - train - INFO -     test_loss      : 3.553847612977839
+2026-06-14 21:26:27,304 - train - INFO -     test_Perplexity: 34.947523680947484
+2026-06-14 21:26:27,355 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:26:38,511 - train - INFO -     epoch          : 18
+2026-06-14 21:26:38,511 - train - INFO -     loss           : 3.3061623540189533
+2026-06-14 21:26:38,511 - train - INFO -     grad_norm      : 0.9948372667034467
+2026-06-14 21:26:38,511 - train - INFO -     Perplexity     : 27.280232455062293
+2026-06-14 21:26:38,511 - train - INFO -     val_loss       : 3.596467719823828
+2026-06-14 21:26:38,511 - train - INFO -     val_Perplexity : 36.47355214125112
+2026-06-14 21:26:38,511 - train - INFO -     test_loss      : 3.543062550680978
+2026-06-14 21:26:38,512 - train - INFO -     test_Perplexity: 34.572637679181064
+2026-06-14 21:26:38,563 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:26:49,555 - train - INFO -     epoch          : 19
+2026-06-14 21:26:49,555 - train - INFO -     loss           : 3.274832785129547
+2026-06-14 21:26:49,555 - train - INFO -     grad_norm      : 0.9975735305084122
+2026-06-14 21:26:49,555 - train - INFO -     Perplexity     : 26.43880414970614
+2026-06-14 21:26:49,555 - train - INFO -     val_loss       : 3.588109511334749
+2026-06-14 21:26:49,555 - train - INFO -     val_Perplexity : 36.17037384408051
+2026-06-14 21:26:49,555 - train - INFO -     test_loss      : 3.5341036838739095
+2026-06-14 21:26:49,555 - train - INFO -     test_Perplexity: 34.264289311390016
+2026-06-14 21:26:49,605 - train - INFO - Saving current best: model_best.pth ...
+2026-06-14 21:27:01,450 - train - INFO -     epoch          : 20
+2026-06-14 21:27:01,451 - train - INFO -     loss           : 3.257628619670868
+2026-06-14 21:27:01,451 - train - INFO -     grad_norm      : 0.9999698648850123
+2026-06-14 21:27:01,451 - train - INFO -     Perplexity     : 25.987836968758714
+2026-06-14 21:27:01,451 - train - INFO -     val_loss       : 3.5805066874806917
+2026-06-14 21:27:01,451 - train - INFO -     val_Perplexity : 35.89698145991175
+2026-06-14 21:27:01,451 - train - INFO -     test_loss      : 3.526343214268587
+2026-06-14 21:27:01,451 - train - INFO -     test_Perplexity: 33.999411453276466
+2026-06-14 21:27:01,506 - train - INFO - Saving current best: model_best.pth ...
