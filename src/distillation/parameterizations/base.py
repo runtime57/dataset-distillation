@@ -28,7 +28,9 @@ def _kmeans(data, k, n_iter=100):
 
 class BaseSyntheticTokenDataset(nn.Module):
     def sample_indices(self, batch_size, device):
-        return torch.randint(self.num_sequences, size=(batch_size,), device=device)
+        if batch_size >= self.num_sequences:
+            return torch.arange(self.num_sequences, device=device)
+        return torch.randperm(self.num_sequences, device=device)[:batch_size]
 
     def token_probs(self, indices=None, embedding_weight=None):
         raise NotImplementedError
