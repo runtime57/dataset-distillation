@@ -13,7 +13,11 @@ from src.distillation.checkpoints import (
     save_checkpoint,
     snapshot_synthetic_data,
 )
-from src.distillation.data import collect_initial_tokens, synthetic_batch
+from src.distillation.data import (
+    collect_grouped_initial_token_probs,
+    collect_initial_tokens,
+    synthetic_batch,
+)
 from src.distillation.factory import build_synthetic_data
 from src.distillation.losses import entropy
 from src.distillation.objectives import (
@@ -292,6 +296,22 @@ def run_distillation(config):
         synthetic_data.initialize_from_kmeans(
             embedding_weight=model.token_embedding.weight,
             confidence=config.distillation.synthetic.init_confidence,
+        )
+    elif init_mode in {"grouped_real", "real_grouped"}:
+        grouped_probs = collect_grouped_initial_token_probs(
+            dataloader=dataloaders["train"],
+            num_sequences=config.distillation.synthetic.num_sequences,
+            group_size=int(config.distillation.synthetic.get("init_group_size", 1)),
+            vocab_size=config.distillation.synthetic.vocab_size,
+            device=device,
+            probability_floor=float(
+                config.distillation.synthetic.get("init_probability_floor", 0.01)
+            ),
+        )
+        synthetic_data.initialize_from_token_probs(
+            grouped_probs,
+            confidence=config.distillation.synthetic.init_confidence,
+            embedding_weight=model.token_embedding.weight,
         )
     elif config.distillation.synthetic.init_from_real:
         init_tokens = collect_initial_tokens(

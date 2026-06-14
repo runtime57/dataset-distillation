@@ -33,6 +33,17 @@ class BaseSyntheticTokenDataset(nn.Module):
     def token_probs(self, indices=None, embedding_weight=None):
         raise NotImplementedError
 
+    def initialize_from_token_probs(
+        self,
+        token_probs,
+        confidence=5.0,
+        embedding_weight=None,
+    ):
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support initialization from "
+            "soft token probabilities."
+        )
+
     def input_embeds(self, indices, embedding_weight):
         return self.token_probs(indices, embedding_weight) @ embedding_weight
 

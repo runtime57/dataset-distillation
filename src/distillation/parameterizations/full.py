@@ -65,6 +65,22 @@ class FullSoftTokenDataset(BaseSyntheticTokenDataset):
             self.logits.scatter_(-1, input_ids.unsqueeze(-1), confidence)
             self.logits.add_(torch.randn_like(self.logits) * 0.01)
 
+    def initialize_from_token_probs(
+        self,
+        token_probs,
+        confidence=5.0,
+        embedding_weight=None,
+    ):
+        if token_probs.shape != (self.num_sequences, self.sequence_length, self.vocab_size):
+            raise ValueError(
+                "Expected token_probs shape "
+                f"{(self.num_sequences, self.sequence_length, self.vocab_size)}, got "
+                f"{tuple(token_probs.shape)}."
+            )
+        with torch.no_grad():
+            probs = token_probs / token_probs.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+            self.logits.copy_(torch.log(probs.clamp_min(1e-12)) * self.temperature)
+
 
 class TopKSoftTokenDataset(BaseSyntheticTokenDataset):
     """
@@ -205,3 +221,19 @@ class GumbelTopKSoftTokenDataset(BaseSyntheticTokenDataset):
             self.logits.zero_()
             self.logits.scatter_(-1, input_ids.unsqueeze(-1), confidence)
             self.logits.add_(torch.randn_like(self.logits) * 0.01)
+
+    def initialize_from_token_probs(
+        self,
+        token_probs,
+        confidence=5.0,
+        embedding_weight=None,
+    ):
+        if token_probs.shape != (self.num_sequences, self.sequence_length, self.vocab_size):
+            raise ValueError(
+                "Expected token_probs shape "
+                f"{(self.num_sequences, self.sequence_length, self.vocab_size)}, got "
+                f"{tuple(token_probs.shape)}."
+            )
+        with torch.no_grad():
+            probs = token_probs / token_probs.sum(dim=-1, keepdim=True).clamp_min(1e-12)
+            self.logits.copy_(torch.log(probs.clamp_min(1e-12)) * self.temperature)

@@ -13,6 +13,43 @@ def collect_initial_tokens(dataloader, num_sequences, device):
     raise RuntimeError("Could not collect enough real tokens for initialization.")
 
 
+def collect_grouped_initial_token_probs(
+    dataloader,
+    num_sequences,
+    group_size,
+    vocab_size,
+    device,
+    probability_floor=0.01,
+):
+    if group_size < 1:
+        raise ValueError(f"group_size must be positive, got {group_size}.")
+    if probability_floor <= 0:
+        raise ValueError(
+            f"probability_floor must be positive, got {probability_floor}."
+        )
+
+    total_sequences = num_sequences * group_size
+    input_ids = collect_initial_tokens(
+        dataloader=dataloader,
+        num_sequences=total_sequences,
+        device=device,
+    )
+    grouped_ids = input_ids.view(num_sequences, group_size, -1).transpose(1, 2).contiguous()
+    token_probs = torch.full(
+        (num_sequences, grouped_ids.shape[1], vocab_size),
+        fill_value=float(probability_floor),
+        device=device,
+        dtype=torch.float32,
+    )
+    token_probs.scatter_add_(
+        dim=-1,
+        index=grouped_ids,
+        src=torch.ones_like(grouped_ids, dtype=token_probs.dtype),
+    )
+    token_probs /= token_probs.sum(dim=-1, keepdim=True)
+    return token_probs
+
+
 def synthetic_batch(synthetic_data, model_params, batch_size, device):
     indices = synthetic_data.sample_indices(batch_size, device=device)
     embedding_weight = model_params["token_embedding.weight"]
