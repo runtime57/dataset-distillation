@@ -1,0 +1,2 @@
+objective,best_step,best_train_loss,eval_accuracy_mean,eval_accuracy_std,eval_loss_mean,image_grid
+gradient_matching,941,0.07620348036289215,0.133,0.0,2.296009536743164,results/mnist_raw_noise_gm_ssnlish_1000_check/gradient_matching/synthetic_grid.png

@@ -1,0 +1,9 @@
+{
+  "best_step": 331,
+  "best_train_loss": 0.2180519849061966,
+  "eval_accuracy_mean": 0.1405,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.2983511123657228,
+  "image_grid": "results/mnist_raw_noise_tm_ssnlish_1000_check/trajectory_matching/synthetic_grid.png",
+  "objective": "trajectory_matching"
+}

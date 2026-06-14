@@ -1,0 +1,9 @@
+{
+  "best_step": 337,
+  "best_train_loss": 0.0005032995250076056,
+  "eval_accuracy_mean": 0.1405,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 2.285528610229492,
+  "image_grid": "results/mnist_raw_noise_fm_ssnlish_1000_check/feature_matching/synthetic_grid.png",
+  "objective": "feature_matching"
+}

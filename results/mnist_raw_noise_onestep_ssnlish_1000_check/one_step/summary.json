@@ -1,0 +1,9 @@
+{
+  "best_step": 836,
+  "best_train_loss": 0.5930151343345642,
+  "eval_accuracy_mean": 0.7835,
+  "eval_accuracy_std": 0.0,
+  "eval_loss_mean": 0.6911418647766113,
+  "image_grid": "results/mnist_raw_noise_onestep_ssnlish_1000_check/one_step/synthetic_grid.png",
+  "objective": "one_step"
+}

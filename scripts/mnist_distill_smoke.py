@@ -60,29 +60,65 @@ class LeNet(nn.Module):
 
 
 class SyntheticMNIST(nn.Module):
-    def __init__(self, n_steps, images_per_step, init_std=0.1, lr_init=0.02):
+    def __init__(
+        self,
+        n_steps,
+        images_per_step,
+        init_std=0.1,
+        lr_init=0.02,
+        lr_steps=None,
+        image_param="sigmoid",
+    ):
         super().__init__()
+        if image_param not in {"sigmoid", "raw"}:
+            raise ValueError(f"Unsupported image_param: {image_param}")
         self.n_steps = n_steps
         self.images_per_step = images_per_step
+        self.image_param = image_param
         self.images = nn.Parameter(
             init_std * torch.randn(n_steps, images_per_step, 1, 28, 28)
         )
+        lr_steps = n_steps if lr_steps is None else lr_steps
         raw_lr = math.log(math.exp(lr_init) - 1.0)
-        self.raw_lrs = nn.Parameter(torch.full((n_steps,), raw_lr))
+        self.raw_lrs = nn.Parameter(torch.full((lr_steps,), raw_lr))
         labels = torch.arange(images_per_step) % 10
         self.register_buffer("labels", labels.long())
 
     def batch(self, step):
-        return self.images[step].sigmoid(), self.labels
+        return self.training_images()[step], self.labels
+
+    def training_images(self):
+        if self.image_param == "sigmoid":
+            return self.images.sigmoid()
+        return self.images
+
+    def visualization_images(self):
+        images = self.training_images().detach().cpu()
+        if self.image_param == "sigmoid":
+            return images.clamp(0.0, 1.0)
+        flat = images.flatten(2)
+        min_values = flat.min(dim=2).values[:, :, None, None, None]
+        max_values = flat.max(dim=2).values[:, :, None, None, None]
+        return (images - min_values) / (max_values - min_values).clamp(min=1e-8)
 
     def lrs(self):
         return F.softplus(self.raw_lrs)
 
     @torch.no_grad()
     def initialize_from_images(self, images):
-        clamped = images.clamp(1e-4, 1.0 - 1e-4)
-        logits = torch.logit(clamped)
-        self.images.copy_(logits)
+        if self.image_param == "sigmoid":
+            clamped = images.clamp(1e-4, 1.0 - 1e-4)
+            self.images.copy_(torch.logit(clamped))
+        else:
+            self.images.copy_(images)
+
+    @torch.no_grad()
+    def initialize_uniform_pixels(self, low=1e-3, high=1.0 - 1e-3):
+        pixels = torch.empty_like(self.images).uniform_(low, high)
+        if self.image_param == "sigmoid":
+            self.images.copy_(torch.logit(pixels))
+        else:
+            self.images.copy_(pixels)
 
 
 def parse_args():
@@ -100,14 +136,47 @@ def parse_args():
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--distill-steps", type=int, default=10)
     parser.add_argument("--distill-epochs", type=int, default=3)
+    parser.add_argument(
+        "--lr-schedule",
+        choices=["per_step", "per_update"],
+        default="per_step",
+        help=(
+            "Use one learned LR per synthetic step, re-used across epochs, or "
+            "one LR per inner update."
+        ),
+    )
     parser.add_argument("--eval-seeds", type=int, default=1)
     parser.add_argument("--init-batch", type=int, default=2)
     parser.add_argument("--synthetic-lr", type=float, default=0.001)
+    parser.add_argument("--adam-beta1", type=float, default=0.9)
+    parser.add_argument("--adam-beta2", type=float, default=0.999)
+    parser.add_argument("--grad-clip", type=float, default=5.0)
+    parser.add_argument(
+        "--image-param",
+        choices=["sigmoid", "raw"],
+        default="sigmoid",
+        help="Optimize pixels through a sigmoid or pass unconstrained synthetic tensors to the model.",
+    )
+    parser.add_argument(
+        "--synthetic-lr-scheduler",
+        choices=["none", "reduce_on_plateau", "step"],
+        default="none",
+    )
+    parser.add_argument("--plateau-factor", type=float, default=0.5)
+    parser.add_argument("--plateau-patience", type=int, default=100)
+    parser.add_argument("--plateau-threshold", type=float, default=1e-3)
+    parser.add_argument("--plateau-cooldown", type=int, default=0)
+    parser.add_argument("--min-synthetic-lr", type=float, default=1e-5)
+    parser.add_argument("--plateau-ema", type=float, default=0.95)
+    parser.add_argument("--step-lr-size", type=int, default=400)
+    parser.add_argument("--step-lr-gamma", type=float, default=0.5)
     parser.add_argument("--distilled-lr-init", type=float, default=0.02)
-    parser.add_argument("--init-mode", choices=["noise", "real"], default="noise")
+    parser.add_argument("--init-std", type=float, default=0.1)
+    parser.add_argument("--init-mode", choices=["noise", "uniform", "real"], default="noise")
     parser.add_argument("--expert-steps", type=int, default=60)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--disable-progress", action="store_true")
     return parser.parse_args()
 
 
@@ -227,8 +296,16 @@ def apply_synthetic_training(
 ):
     inner_loss = None
     lrs = synthetic.lrs()
-    for _ in range(epochs):
+    expected_lrs = epochs * synthetic.n_steps
+    if lrs.numel() not in {synthetic.n_steps, expected_lrs}:
+        raise ValueError(
+            "Synthetic LR count must equal n_steps or epochs * n_steps, got "
+            f"{lrs.numel()} for epochs={epochs}, n_steps={synthetic.n_steps}."
+        )
+    for epoch in range(epochs):
         for step in range(synthetic.n_steps):
+            lr_index = epoch * synthetic.n_steps + step
+            lr = lrs[lr_index] if lrs.numel() == expected_lrs else lrs[step]
             x_s, y_s = synthetic.batch(step)
             x_s = x_s.to(device)
             y_s = y_s.to(device)
@@ -238,7 +315,7 @@ def apply_synthetic_training(
                 buffers,
                 x_s,
                 y_s,
-                lrs[step],
+                lr,
                 create_graph=create_graph,
             )
     return params, inner_loss
@@ -259,53 +336,87 @@ def gradient_matching_loss(model, synthetic, real_batch, synth_step, device):
     x_real, y_real = (tensor.to(device) for tensor in real_batch)
     params = named_params(model)
     buffers = model_buffers(model)
-    real_loss = ce_with_params(model, params, buffers, x_real, y_real)
-    real_grads = torch.autograd.grad(
-        real_loss,
-        tuple(params.values()),
-        create_graph=False,
-        allow_unused=True,
-    )
     x_s, y_s = synthetic.batch(synth_step)
     x_s = x_s.to(device)
     y_s = y_s.to(device)
-    synth_loss = ce_with_params(model, params, buffers, x_s, y_s)
-    synth_grads = torch.autograd.grad(
-        synth_loss,
-        tuple(params.values()),
-        create_graph=True,
-        allow_unused=True,
-    )
+
     total = x_real.new_tensor(0.0)
     weight = 0
-    for real_grad, synth_grad in zip(real_grads, synth_grads):
-        if real_grad is None or synth_grad is None:
+    matched_classes = 0
+    for class_index in y_s.unique(sorted=True):
+        real_mask = y_real == class_index
+        synth_mask = y_s == class_index
+        if not real_mask.any() or not synth_mask.any():
             continue
-        real_flat = real_grad.detach().flatten()
-        synth_flat = synth_grad.flatten()
-        real_norm = real_flat.norm()
-        synth_norm = synth_flat.norm()
-        if real_norm > 1e-8 and synth_norm > 1e-8:
-            total = total + real_flat.numel() * (
-                1.0 - torch.dot(real_flat, synth_flat) / (real_norm * synth_norm)
-            )
-            weight += real_flat.numel()
+        matched_classes += 1
+        real_loss = ce_with_params(
+            model,
+            params,
+            buffers,
+            x_real[real_mask],
+            y_real[real_mask],
+        )
+        real_grads = torch.autograd.grad(
+            real_loss,
+            tuple(params.values()),
+            create_graph=False,
+            allow_unused=True,
+        )
+        synth_loss = ce_with_params(
+            model,
+            params,
+            buffers,
+            x_s[synth_mask],
+            y_s[synth_mask],
+        )
+        synth_grads = torch.autograd.grad(
+            synth_loss,
+            tuple(params.values()),
+            create_graph=True,
+            allow_unused=True,
+        )
+        for real_grad, synth_grad in zip(real_grads, synth_grads):
+            if real_grad is None or synth_grad is None:
+                continue
+            real_flat = real_grad.detach().flatten()
+            synth_flat = synth_grad.flatten()
+            real_norm = real_flat.norm()
+            synth_norm = synth_flat.norm()
+            if real_norm > 1e-8 and synth_norm > 1e-8:
+                total = total + real_flat.numel() * (
+                    1.0 - torch.dot(real_flat, synth_flat) / (real_norm * synth_norm)
+                )
+                weight += real_flat.numel()
+    if matched_classes == 0:
+        raise RuntimeError("Gradient matching batch has no overlapping classes.")
+    synth_loss = ce_with_params(model, params, buffers, x_s, y_s)
     return total / max(weight, 1), synth_loss.detach()
 
 
 def feature_matching_loss(model, synthetic, real_batch, synth_step, device):
-    x_real, _y_real = (tensor.to(device) for tensor in real_batch)
+    x_real, y_real = (tensor.to(device) for tensor in real_batch)
     with torch.no_grad():
         _logits, real_features = model(x_real, return_features=True)
-        real_means = [feature.mean(dim=0) for feature in real_features]
     x_s, y_s = synthetic.batch(synth_step)
     x_s = x_s.to(device)
     y_s = y_s.to(device)
     logits, synth_features = model(x_s, return_features=True)
-    feature_loss = sum(
-        F.mse_loss(synth.mean(dim=0), real)
-        for synth, real in zip(synth_features, real_means)
-    )
+
+    feature_loss = x_real.new_tensor(0.0)
+    matched_classes = 0
+    for class_index in y_s.unique(sorted=True):
+        real_mask = y_real == class_index
+        synth_mask = y_s == class_index
+        if not real_mask.any() or not synth_mask.any():
+            continue
+        matched_classes += 1
+        for real_feature, synth_feature in zip(real_features, synth_features):
+            real_mean = real_feature[real_mask].mean(dim=0)
+            synth_mean = synth_feature[synth_mask].mean(dim=0)
+            feature_loss = feature_loss + F.mse_loss(synth_mean, real_mean)
+    if matched_classes == 0:
+        raise RuntimeError("Feature matching batch has no overlapping classes.")
+    feature_loss = feature_loss / matched_classes
     return feature_loss, F.cross_entropy(logits, y_s).detach()
 
 
@@ -313,6 +424,7 @@ def train_expert_trajectory(loader, args, device):
     model = make_model(args.seed + 10_000, device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     iterator = cycle_loader(loader)
+    checkpoint_interval = args.distill_epochs * args.distill_steps
     trajectory = [clone_state(model)]
     for step in range(1, args.expert_steps + 1):
         x, y = (tensor.to(device) for tensor in next(iterator))
@@ -320,7 +432,7 @@ def train_expert_trajectory(loader, args, device):
         loss = F.cross_entropy(model(x), y)
         loss.backward()
         optimizer.step()
-        if step % args.distill_steps == 0:
+        if step % checkpoint_interval == 0:
             trajectory.append(clone_state(model))
     return trajectory
 
@@ -331,7 +443,7 @@ def clone_state(model):
     )
 
 
-def trajectory_matching_loss(model, synthetic, expert_trajectory, device):
+def trajectory_matching_loss(model, synthetic, expert_trajectory, epochs, device):
     index = torch.randint(0, len(expert_trajectory) - 1, (1,)).item()
     start = expert_trajectory[index]
     target = expert_trajectory[index + 1]
@@ -340,21 +452,15 @@ def trajectory_matching_loss(model, synthetic, expert_trajectory, device):
         for name, value in start.items()
     )
     buffers = model_buffers(model)
-    lrs = synthetic.lrs()
-    inner_loss = None
-    for step in range(synthetic.n_steps):
-        x_s, y_s = synthetic.batch(step)
-        x_s = x_s.to(device)
-        y_s = y_s.to(device)
-        params, inner_loss = update_params(
-            model,
-            params,
-            buffers,
-            x_s,
-            y_s,
-            lrs[step],
-            create_graph=True,
-        )
+    params, inner_loss = apply_synthetic_training(
+        model,
+        params,
+        buffers,
+        synthetic,
+        epochs,
+        device,
+        create_graph=True,
+    )
     names = list(params.keys())
     student_flat = torch.cat([params[name].flatten() for name in names])
     target_flat = torch.cat([target[name].to(device).flatten() for name in names])
@@ -414,7 +520,7 @@ def evaluate_synthetic(synthetic, test_loader, args, device):
 
 def save_image_grid(synthetic, path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    images = synthetic.images.detach().cpu().sigmoid().numpy()
+    images = synthetic.visualization_images().numpy()
     n_steps = images.shape[0]
     cell = 56
     gap = 4
@@ -505,12 +611,43 @@ def main():
     synthetic = SyntheticMNIST(
         n_steps=args.distill_steps,
         images_per_step=10,
+        init_std=args.init_std,
         lr_init=args.distilled_lr_init,
+        lr_steps=(
+            args.distill_steps * args.distill_epochs
+            if args.lr_schedule == "per_update"
+            else args.distill_steps
+        ),
+        image_param=args.image_param,
     ).to(device)
-    if args.init_mode == "real":
+    if args.init_mode == "uniform":
+        synthetic.initialize_uniform_pixels()
+    elif args.init_mode == "real":
         init_images = balanced_real_init(train_x, train_y, args.distill_steps).to(device)
         synthetic.initialize_from_images(init_images)
-    optimizer = torch.optim.Adam(synthetic.parameters(), lr=args.synthetic_lr)
+    optimizer = torch.optim.Adam(
+        synthetic.parameters(),
+        lr=args.synthetic_lr,
+        betas=(args.adam_beta1, args.adam_beta2),
+    )
+    scheduler = None
+    if args.synthetic_lr_scheduler == "reduce_on_plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=args.plateau_factor,
+            patience=args.plateau_patience,
+            threshold=args.plateau_threshold,
+            threshold_mode="abs",
+            cooldown=args.plateau_cooldown,
+            min_lr=args.min_synthetic_lr,
+        )
+    elif args.synthetic_lr_scheduler == "step":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=args.step_lr_size,
+            gamma=args.step_lr_gamma,
+        )
     expert_trajectory = None
     if args.objective == "trajectory_matching":
         expert_trajectory = train_expert_trajectory(train_loader, args, device)
@@ -518,11 +655,17 @@ def main():
     best_loss = math.inf
     best_step = 0
     best_state = None
+    ema_loss = None
     metrics_path = run_dir / "metrics.jsonl"
     if metrics_path.exists():
         metrics_path.unlink()
 
-    progress = trange(1, args.iterations + 1, desc=args.objective)
+    progress = trange(
+        1,
+        args.iterations + 1,
+        desc=args.objective,
+        disable=args.disable_progress,
+    )
     for step in progress:
         optimizer.zero_grad()
         losses = []
@@ -547,7 +690,7 @@ def main():
                 )
             elif args.objective == "trajectory_matching":
                 loss, inner_loss = trajectory_matching_loss(
-                    model, synthetic, expert_trajectory, device
+                    model, synthetic, expert_trajectory, args.distill_epochs, device
                 )
             else:
                 raise ValueError(args.objective)
@@ -555,10 +698,20 @@ def main():
             inner_losses.append(inner_loss)
         train_loss = torch.stack(losses).mean()
         train_loss.backward()
-        torch.nn.utils.clip_grad_norm_(synthetic.parameters(), 5.0)
+        if args.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(synthetic.parameters(), args.grad_clip)
         optimizer.step()
 
         train_loss_value = float(train_loss.detach().cpu())
+        if ema_loss is None:
+            ema_loss = train_loss_value
+        else:
+            ema_loss = args.plateau_ema * ema_loss + (1.0 - args.plateau_ema) * train_loss_value
+        if args.synthetic_lr_scheduler == "reduce_on_plateau":
+            scheduler.step(ema_loss)
+        elif scheduler is not None:
+            scheduler.step()
+        optimizer_lr = optimizer.param_groups[0]["lr"]
         inner_loss_value = float(torch.stack(inner_losses).mean().detach().cpu())
         if train_loss_value < best_loss:
             best_loss = train_loss_value
@@ -568,17 +721,25 @@ def main():
                 for key, value in synthetic.state_dict().items()
             }
         row = {
-        "step": step,
-        "objective": args.objective,
-        "train_loss": train_loss_value,
-        "inner_loss": inner_loss_value,
-        "best_loss": best_loss,
-        "distilled_lr_mean": float(synthetic.lrs().mean().detach().cpu()),
-        "synthetic_pixel_std": float(synthetic.images.sigmoid().std().detach().cpu()),
-    }
+            "step": step,
+            "objective": args.objective,
+            "train_loss": train_loss_value,
+            "ema_loss": ema_loss,
+            "inner_loss": inner_loss_value,
+            "best_loss": best_loss,
+            "optimizer_lr": optimizer_lr,
+            "distilled_lr_mean": float(synthetic.lrs().mean().detach().cpu()),
+            "synthetic_pixel_std": float(
+                synthetic.training_images().std().detach().cpu()
+            ),
+        }
         with metrics_path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(row, sort_keys=True) + "\n")
-        progress.set_postfix(loss=f"{train_loss_value:.4f}", best=f"{best_loss:.4f}")
+        progress.set_postfix(
+            loss=f"{train_loss_value:.4f}",
+            best=f"{best_loss:.4f}",
+            opt_lr=f"{optimizer_lr:.2e}",
+        )
 
     if best_state is not None:
         synthetic.load_state_dict(best_state)
