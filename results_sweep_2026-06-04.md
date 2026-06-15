@@ -37,8 +37,37 @@ matched to a different architecture (`2` layers, `dropout=0.1`, sometimes
 |---|---|---:|---:|---:|---|
 | `real10k_seq256_4l_adamw_lr1e3_wd001_e5` | real 10k rows | 5 | 11.278 | 10.567 | canonical real baseline |
 | `real_10krows_seq256_bpe1024` | real 10k rows | 3 | 23.310 | 21.777 | older optimizer baseline |
+| `eval_ngram_herding256_ub1_bb4096_hard_local_e12` | distilled hard-token coreset, `n=256` | 4 | 43.156 | 41.168 | current best valid teacher-free `n=256` result |
 | `real256_seq256_4l_adamw_lr1e3_wd001_e8_epochlen64` | real first 256 rows | 3 | 67.023 | 70.137 | same data budget as synthetic, hard real tokens |
-| `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma092_e8` | distilled `n=256`, one-step gumbel top-k64 | 4 | 45.679 | 43.462 | current best valid synthetic result |
+| `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma092_e8` | distilled `n=256`, one-step gumbel top-k64 | 4 | 45.679 | 43.462 | best valid learned-soft-token result from the audited sweep |
+
+## 2026-06-15 Teacher-Free Hard-Token Coreset Probes
+
+These rows are pure dataset-distillation/coreset probes: no teacher targets, no
+hybrid relabeling, same canonical model, `n=256`, `max_seq_len=256`, and the
+same held-out local val/test split. Checkpoints store only hard token ids.
+
+| test PPL | val PPL | epoch | run | selection | eval |
+|---:|---:|---:|---|---|---|
+| 41.168 | 43.156 | 4 | `eval_ngram_herding256_ub1_bb4096_hard_local_e12` | unigram+hashed-bigram herding, `bigram_bins=4096`, `unigram_weight=1.0`, `bigram_weight=1.0` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.235 | 43.241 | 4 | `eval_ngram_herding256_ub1_bb4096_ls64_hard_local_e6` | same herding plus feature-objective swap local search | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.268 | 43.061 | 5 | `eval_ngram_herding256_ub1_bw11_bb4096_hard_local_e6` | unigram+hashed-bigram herding, `bigram_weight=1.1`; best val in this probe set | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.525 | 43.422 | 4 | `eval_ngram_herding256_ub1_bw20_bb4096_hard_local_e4` | unigram+hashed-bigram herding, `bigram_weight=2.0` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.518 | 43.303 | 4 | `eval_ngram_herding256_ub1_bw15_bb4096_hard_local_e6` | unigram+hashed-bigram herding, `bigram_weight=1.5` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.820 | 43.524 | 4 | `eval_ngram_herding256_ub1_bw08_bb4096_hard_local_e6` | unigram+hashed-bigram herding, `bigram_weight=0.8` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 41.902 | 43.665 | 4 | `eval_ngram_herding256_ub1_bw1_bb8192_hard_local_e4` | unigram+hashed-bigram herding, `bigram_bins=8192` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 42.274 | 44.242 | 4 | `eval_ngram_posbigram_herding256_b4096_p4096_pb4096_hard_local_e4` | adds position unigram+bigram hashes at weight 1.0 | lr=0.0035, wd=1.1, gamma=0.92 |
+| 42.351 | 44.248 | 4 | `eval_ngram_tri_herding256_ub1_bw1_tw05_bb4096_tb4096_hard_local_e6` | adds hashed trigrams with `trigram_weight=0.5` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 42.414 | 44.411 | 5 | `eval_ngram_pos_herding256_b4096_p4096_pw01_hard_local_e6` | adds position unigram hashes with `position_weight=0.1` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 42.605 | 44.546 | 4 | `eval_ngram_herding256_ub1_bw05_bb4096_hard_local_e4` | unigram+hashed-bigram herding, `bigram_weight=0.5` | lr=0.0035, wd=1.1, gamma=0.92 |
+| 42.903 | 44.627 | 4 | `eval_ngram_pos_herding256_b4096_p4096_hard_local_e4` | adds position unigram hashes at weight 1.0 | lr=0.0035, wd=1.1, gamma=0.92 |
+| 43.722 | 46.201 | 4 | `eval_random256_seed1_hard_local_e4` | random 256 hard-token sequences control | lr=0.0035, wd=1.1, gamma=0.92 |
+| 54.177 | 53.548 | 4 | `eval_rare_top256_hard_local_e4` | rare-token top-256 control | lr=0.0035, wd=1.1, gamma=0.92 |
+
+Train-recipe probes on the best coreset did not improve test PPL: `lr=0.0040,
+wd=1.1` reached `val=43.398/test=41.465`, `lr=0.0030, wd=1.1` reached
+`val=43.837/test=41.917`, stronger weight decay (`1.5` or `2.0`) was worse, and
+batch sizes `8`/`32` were worse than the canonical batch size `16`.
 
 ## In-Scope Synthetic Results
 
