@@ -37,7 +37,8 @@ matched to a different architecture (`2` layers, `dropout=0.1`, sometimes
 |---|---|---:|---:|---:|---|
 | `real10k_seq256_4l_adamw_lr1e3_wd001_e5` | real 10k rows | 5 | 11.278 | 10.567 | canonical real baseline |
 | `real_10krows_seq256_bpe1024` | real 10k rows | 3 | 23.310 | 21.777 | older optimizer baseline |
-| `eval_ngram_herding256_ub1_bb4096_hard_local_e12` | distilled hard-token coreset, `n=256` | 4 | 43.156 | 41.168 | current best valid teacher-free `n=256` result |
+| `eval_msadamw_support_accept_coreset_hardforward_conf125_s5` | pure topk-gumbel support-search from hard-token coreset, `n=256` | 4 | 43.109 | 41.116 | current best valid teacher-free `n=256` result |
+| `eval_ngram_herding256_ub1_bb4096_hard_local_e12` | distilled hard-token coreset, `n=256` | 4 | 43.156 | 41.168 | previous best valid teacher-free `n=256` result |
 | `real256_seq256_4l_adamw_lr1e3_wd001_e8_epochlen64` | real first 256 rows | 3 | 67.023 | 70.137 | same data budget as synthetic, hard real tokens |
 | `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma092_e8` | distilled `n=256`, one-step gumbel top-k64 | 4 | 45.679 | 43.462 | best valid learned-soft-token result from the audited sweep |
 
@@ -69,6 +70,18 @@ wd=1.1` reached `val=43.398/test=41.465`, `lr=0.0030, wd=1.1` reached
 `val=43.837/test=41.917`, stronger weight decay (`1.5` or `2.0`) was worse, and
 batch sizes `8`/`32` were worse than the canonical batch size `16`.
 
+## 2026-06-15 Pure Support-Search Probe
+
+This row stays in the teacher-free setting: no teacher targets, canonical model,
+`n=256`, `max_seq_len=256`. It initializes from the best hard-token coreset,
+then runs `topk_gumbel64` with hard-forward straight-through tokens and a
+multi-step AdamW support-search accept/reject step. The 5-step run accepted 60
+net hard-token changes from the coreset.
+
+| test PPL | val PPL | epoch | run | synthetic | eval |
+|---:|---:|---:|---|---|---|
+| 41.116 | 43.109 | 4 | `eval_msadamw_support_accept_coreset_hardforward_conf125_s5` | `multi_step_adamw`, `topk_gumbel64`, hard_forward, coreset init, support-search accept, 5 steps | lr=0.0035, wd=1.1, gamma=0.92, hard inputs |
+
 ## In-Scope Synthetic Results
 
 Sorted by test PPL. This is the useful band of the 95 valid canonical rows;
@@ -77,6 +90,7 @@ not change the current best.
 
 | test PPL | val PPL | epoch | run | synthetic | eval |
 |---:|---:|---:|---|---|---|
+| 41.116 | 43.109 | 4 | `eval_msadamw_support_accept_coreset_hardforward_conf125_s5` | `multi_step_adamw`, topk_gumbel64, hard_forward, coreset init, support-search accept, 5 steps | lr=0.0035, wd=1.1, gamma=0.92 |
 | 43.462 | 45.679 | 4 | `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma092_e8` | one_step, topk_gumbel64, conf=12.5, steps=400 | lr=0.0035, wd=1.1, gamma=0.92 |
 | 43.486 | 45.695 | 4 | `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma09_e8` | one_step, topk_gumbel64, conf=12.5, steps=400 | lr=0.0035, wd=1.1, gamma=0.9 |
 | 43.489 | 45.702 | 4 | `eval_os_gumbel64_n256_conf125_lr001_detckpt_lr35e4_wd11_gamma093_e8` | one_step, topk_gumbel64, conf=12.5, steps=400 | lr=0.0035, wd=1.1, gamma=0.93 |
@@ -196,11 +210,14 @@ Canonical configs retained for future runs:
 - `src/configs/distill_soft_tokens_one_step_10k_seq256_topk8_n256_local_bpe_1024.yaml`
 - `src/configs/distill_soft_tokens_tm_10k_seq256_gumbel32_n256_local_bpe_1024.yaml`
 - `src/configs/distill_soft_tokens_tm_10k_seq256_topk8_n256_local_bpe_1024.yaml`
+- `src/configs/distill_soft_tokens_msadamw_support_accept_coreset_gumbel64_n256_local_bpe_1024.yaml`
 
 Example command pair for the current best family:
 
 ```bash
-python3 distill.py -cn distill_soft_tokens_os_gumbel64_matched_local_bpe_1024
+python3 distill.py \
+  -cn distill_soft_tokens_msadamw_support_accept_coreset_gumbel64_n256_local_bpe_1024
 python3 train.py -cn tinystories_lm_softdistill_matched_local_bpe_1024 \
-  datasets.train.checkpoint_path=saved/distillation/<run>/full_soft_tokens_best.pth
+  datasets.train.checkpoint_path=saved/fix_runs/msadamw_support_accept_coreset_hardforward_conf125_s5/full_soft_tokens_best.pth \
+  datasets.train.use_hard_inputs=true
 ```

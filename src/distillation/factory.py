@@ -1,6 +1,8 @@
 from src.distillation.parameterizations import (
     AnchorSoftTokenDataset,
     ConceptSoftTokenDataset,
+    DecoupledGumbelTopKSoftTokenDataset,
+    FixedTargetGumbelTopKSoftTokenDataset,
     FullSoftTokenDataset,
     GroupedAnchorSoftTokenDataset,
     GumbelTopKSoftTokenDataset,
@@ -21,18 +23,43 @@ def build_synthetic_data(config):
         "temperature": synthetic_config.temperature,
         "init_std": synthetic_config.init_std,
     }
+    hard_forward = synthetic_config.get("hard_forward", False)
 
     if parameterization == "full":
-        return FullSoftTokenDataset(**common_kwargs)
+        return FullSoftTokenDataset(
+            **common_kwargs,
+            hard_forward=hard_forward,
+        )
     if parameterization == "topk":
         return TopKSoftTokenDataset(
             **common_kwargs,
             k=synthetic_config.get("topk", 16),
+            hard_forward=hard_forward,
         )
     if parameterization == "topk_gumbel":
         return GumbelTopKSoftTokenDataset(
             **common_kwargs,
             k=synthetic_config.get("topk", 16),
+            gradient_temperature=synthetic_config.get("gradient_temperature"),
+            hard_forward=hard_forward,
+        )
+    if parameterization == "decoupled_topk_gumbel":
+        return DecoupledGumbelTopKSoftTokenDataset(
+            **common_kwargs,
+            k=synthetic_config.get("topk", 16),
+            gradient_temperature=synthetic_config.get("gradient_temperature"),
+            target_init_std=synthetic_config.get("target_init_std"),
+            target_init_confidence=synthetic_config.get("target_init_confidence"),
+            hard_forward=hard_forward,
+            target_hard_forward=synthetic_config.get("target_hard_forward", False),
+        )
+    if parameterization == "fixed_target_topk_gumbel":
+        return FixedTargetGumbelTopKSoftTokenDataset(
+            **common_kwargs,
+            k=synthetic_config.get("topk", 16),
+            gradient_temperature=synthetic_config.get("gradient_temperature"),
+            target_checkpoint_path=synthetic_config.get("target_checkpoint_path"),
+            hard_forward=hard_forward,
         )
     if parameterization == "anchors":
         return AnchorSoftTokenDataset(

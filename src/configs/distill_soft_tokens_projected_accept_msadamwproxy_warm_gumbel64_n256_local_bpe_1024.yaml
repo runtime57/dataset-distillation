@@ -1,0 +1,100 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+datasets:
+  train:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 10000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+  val:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 3000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+
+dataloader:
+  batch_size: 8
+
+distillation:
+  seed: 1
+  device: auto
+  run_name: "distill_projected_accept_msadamwproxy_warm_gumbel64_n256_p32_g4_s40"
+  save_dir: "saved/pure_projected_accept"
+  override: true
+  objective: one_step
+  n_steps: 40
+  log_step: 1
+  save_period: 40
+  save_step_checkpoints: false
+  real_split: "train"
+  outer_batches: 2
+  inner_lr: 0.0035
+  learn_inner_lr: false
+  min_inner_lr: null
+  max_inner_lr: null
+  entropy_weight: 0.0
+  max_grad_norm: 1.0
+  n_inner_steps: 4
+  inner_beta1: 0.9
+  inner_beta2: 0.999
+  inner_eps: 1e-8
+  inner_weight_decay: 1.1
+  support_search:
+    enabled: true
+    period: 1
+    proposal_objective: multi_step_adamw
+    proposal:
+      n_inner_steps: ${distillation.n_inner_steps}
+      inner_beta1: ${distillation.inner_beta1}
+      inner_beta2: ${distillation.inner_beta2}
+      inner_eps: ${distillation.inner_eps}
+      inner_weight_decay: ${distillation.inner_weight_decay}
+    batch_size: 16
+    max_replacements: 32
+    min_gain: 0.0
+    outer_batches: 2
+    keep_old_hard: true
+    reset_logits: true
+    confidence: ${distillation.synthetic.init_confidence}
+    exclude_support: false
+    exclude_token_ids: [0]
+    acceptance:
+      enabled: true
+      proxy_objective: multi_step_adamw
+      n_inner_steps: ${distillation.n_inner_steps}
+      inner_beta1: ${distillation.inner_beta1}
+      inner_beta2: ${distillation.inner_beta2}
+      inner_eps: ${distillation.inner_eps}
+      inner_weight_decay: ${distillation.inner_weight_decay}
+      proposal_count: 32
+      group_size: 4
+      min_improvement: 0.0
+  synthetic:
+    num_sequences: 256
+    sequence_length: ${model.max_seq_len}
+    vocab_size: ${model.vocab_size}
+    batch_size: 16
+    temperature: 1.0
+    init_std: 0.02
+    init_from_real: false
+    init_confidence: 12.5
+    init_checkpoint_path: "saved/sweep_20260604_distill/distill_os_gumbel64_n256_conf125_lr001_detckpt/full_soft_tokens_best.pth"
+    init_checkpoint_confidence: null
+    parameterization: topk_gumbel
+    topk: 64
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.0

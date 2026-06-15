@@ -10,6 +10,8 @@ from src.distillation.parameterizations.concepts import (
     SequenceConceptSoftTokenDataset,
 )
 from src.distillation.parameterizations.full import (
+    DecoupledGumbelTopKSoftTokenDataset,
+    FixedTargetGumbelTopKSoftTokenDataset,
     FullSoftTokenDataset,
     GumbelTopKSoftTokenDataset,
     TopKSoftTokenDataset,
@@ -19,6 +21,8 @@ __all__ = [
     "AnchorSoftTokenDataset",
     "BaseSyntheticTokenDataset",
     "ConceptSoftTokenDataset",
+    "DecoupledGumbelTopKSoftTokenDataset",
+    "FixedTargetGumbelTopKSoftTokenDataset",
     "FullSoftTokenDataset",
     "GroupedAnchorSoftTokenDataset",
     "GumbelTopKSoftTokenDataset",

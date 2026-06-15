@@ -16,24 +16,83 @@ from src.utils.io_utils import ROOT_PATH
 
 def _state_dict_cpu(model):
     return {
-        key: value.detach().cpu().clone()
-        for key, value in model.state_dict().items()
+        key: value.detach().cpu().clone() for key, value in model.state_dict().items()
     }
 
 
-def _trajectory_metadata(config, momentum):
+def _optimizer_state_cpu(optimizer, model):
+    parameter_names = {
+        id(parameter): name for name, parameter in model.named_parameters()
+    }
+    state = {}
+    for group in optimizer.param_groups:
+        for parameter in group["params"]:
+            name = parameter_names.get(id(parameter))
+            if name is None:
+                continue
+            parameter_state = optimizer.state.get(parameter)
+            if not parameter_state:
+                continue
+            state[name] = {}
+            for key, value in parameter_state.items():
+                if torch.is_tensor(value):
+                    state[name][key] = value.detach().cpu().clone()
+                else:
+                    state[name][key] = value
+    return state
+
+
+def _expert_optimizer_settings(config):
+    name = str(config.expert.get("optimizer", "sgd")).lower()
+    lr = float(config.expert.lr)
+    if name == "sgd":
+        momentum = float(config.expert.get("momentum", 0.0))
+        return {
+            "name": "sgd",
+            "lr": lr,
+            "momentum": momentum,
+        }
+    if name == "adamw":
+        beta1 = float(config.expert.get("beta1", 0.9))
+        beta2 = float(config.expert.get("beta2", 0.999))
+        eps = float(config.expert.get("eps", 1e-8))
+        weight_decay = float(config.expert.get("weight_decay", 0.0))
+        return {
+            "name": "adamw",
+            "lr": lr,
+            "betas": (beta1, beta2),
+            "eps": eps,
+            "weight_decay": weight_decay,
+        }
+    raise ValueError(f"Unsupported expert.optimizer={name!r}.")
+
+
+def _build_optimizer(model, settings):
+    if settings["name"] == "sgd":
+        return torch.optim.SGD(
+            model.parameters(),
+            lr=settings["lr"],
+            momentum=settings["momentum"],
+        )
+    if settings["name"] == "adamw":
+        return torch.optim.AdamW(
+            model.parameters(),
+            lr=settings["lr"],
+            betas=tuple(settings["betas"]),
+            eps=settings["eps"],
+            weight_decay=settings["weight_decay"],
+        )
+    raise ValueError(f"Unsupported expert optimizer={settings['name']!r}.")
+
+
+def _trajectory_metadata(config, optimizer_settings):
     return {
         "format_version": 2,
         "model": OmegaConf.to_container(config.model, resolve=True),
         "datasets": OmegaConf.to_container(config.datasets, resolve=True),
         "dataloader": OmegaConf.to_container(config.dataloader, resolve=True),
-        "optimizer": {
-            "name": "SGD",
-            "lr": float(config.expert.lr),
-            "momentum": float(momentum),
-        },
+        "optimizer": optimizer_settings,
         "lr": float(config.expert.lr),
-        "momentum": float(momentum),
         "save_period": int(config.expert.save_period),
         "n_steps": int(config.expert.n_steps),
         "seed": int(config.expert.seed),
@@ -59,17 +118,19 @@ def run_expert_trajectory(config):
     real_loader = inf_loop(dataloaders["train"])
 
     model = instantiate(config.model).to(device)
-    momentum = float(config.expert.get("momentum", 0.0))
-    optimizer = torch.optim.SGD(
-        model.parameters(),
-        lr=config.expert.lr,
-        momentum=momentum,
-    )
+    optimizer_settings = _expert_optimizer_settings(config)
+    optimizer = _build_optimizer(model, optimizer_settings)
 
     save_path = ROOT_PATH / config.expert.save_dir
     save_path.mkdir(parents=True, exist_ok=True)
 
-    checkpoints = [{"step": 0, "state_dict": _state_dict_cpu(model)}]
+    checkpoints = [
+        {
+            "step": 0,
+            "state_dict": _state_dict_cpu(model),
+            "optimizer_state": _optimizer_state_cpu(optimizer, model),
+        }
+    ]
     model.train()
     for step in trange(1, n_steps + 1, desc="expert trajectory"):
         batch = move_batch_to_device(next(real_loader), device)
@@ -87,10 +148,16 @@ def run_expert_trajectory(config):
         optimizer.step()
 
         if step % save_period == 0:
-            checkpoints.append({"step": step, "state_dict": _state_dict_cpu(model)})
+            checkpoints.append(
+                {
+                    "step": step,
+                    "state_dict": _state_dict_cpu(model),
+                    "optimizer_state": _optimizer_state_cpu(optimizer, model),
+                }
+            )
 
     payload = {
-        "metadata": _trajectory_metadata(config, momentum),
+        "metadata": _trajectory_metadata(config, optimizer_settings),
         "checkpoints": checkpoints,
     }
     output_path = save_path / "expert_checkpoints.pth"

@@ -10,7 +10,10 @@ class HardTokenCheckpointDataset(Dataset):
     """
 
     def __init__(self, checkpoint_path, max_sequences=None):
+        self.checkpoint_path = str(checkpoint_path)
         checkpoint = torch.load(Path(checkpoint_path), map_location="cpu")
+        self.checkpoint_config = self._extract_config(checkpoint)
+        self.checkpoint_model_config = self._extract_model_config(checkpoint)
         token_ids = self._extract_token_ids(checkpoint)
 
         if token_ids.dim() != 2:
@@ -24,6 +27,11 @@ class HardTokenCheckpointDataset(Dataset):
 
         self.input_ids = token_ids.long()
         self.sequence_length = self.input_ids.shape[1]
+        self.vocab_size = (
+            None
+            if self.checkpoint_model_config is None
+            else self.checkpoint_model_config.get("vocab_size")
+        )
 
     def __len__(self):
         return self.input_ids.shape[0]
@@ -55,3 +63,16 @@ class HardTokenCheckpointDataset(Dataset):
             "Could not find hard token ids in checkpoint. "
             "Expected one of: hard_tokens, input_ids, token_ids."
         )
+
+    @staticmethod
+    def _extract_config(checkpoint):
+        if isinstance(checkpoint, dict) and isinstance(checkpoint.get("config"), dict):
+            return checkpoint["config"]
+        return None
+
+    @classmethod
+    def _extract_model_config(cls, checkpoint):
+        config = cls._extract_config(checkpoint)
+        if isinstance(config, dict) and isinstance(config.get("model"), dict):
+            return config["model"]
+        return None

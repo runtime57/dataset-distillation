@@ -1,4 +1,5 @@
 import warnings
+from pprint import pformat
 
 import hydra
 from hydra.utils import instantiate
@@ -13,6 +14,48 @@ from src.utils.init_utils import (
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+
+def _validate_checkpoint_dataset_matches_model(config, dataloaders):
+    train_loader = dataloaders.get("train")
+    train_dataset = (
+        None if train_loader is None else getattr(train_loader, "dataset", None)
+    )
+    if train_dataset is None:
+        return
+
+    sequence_length = getattr(train_dataset, "sequence_length", None)
+    max_seq_len = config.model.get("max_seq_len")
+    if sequence_length is not None and max_seq_len is not None:
+        if int(sequence_length) > int(max_seq_len):
+            raise ValueError(
+                "Train dataset sequence length exceeds model.max_seq_len. "
+                f"dataset={sequence_length}, model.max_seq_len={max_seq_len}. "
+                "Use a matched model config for this checkpoint."
+            )
+
+    dataset_vocab_size = getattr(train_dataset, "vocab_size", None)
+    model_vocab_size = config.model.get("vocab_size")
+    if dataset_vocab_size is not None and model_vocab_size is not None:
+        if int(dataset_vocab_size) != int(model_vocab_size):
+            raise ValueError(
+                "Train dataset vocab_size does not match model.vocab_size. "
+                f"dataset={dataset_vocab_size}, model.vocab_size={model_vocab_size}."
+            )
+
+    checkpoint_model = getattr(train_dataset, "checkpoint_model_config", None)
+    if checkpoint_model is None:
+        return
+
+    current_model = OmegaConf.to_container(config.model, resolve=True)
+    if checkpoint_model != current_model:
+        checkpoint_path = getattr(train_dataset, "checkpoint_path", "<unknown>")
+        raise ValueError(
+            "Distilled checkpoint model config does not match current train model. "
+            f"checkpoint_path={checkpoint_path}\n"
+            f"checkpoint model:\n{pformat(checkpoint_model)}\n"
+            f"current model:\n{pformat(current_model)}"
+        )
 
 
 @hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
@@ -36,6 +79,7 @@ def main(config):
     # setup data_loader instances
     # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
+    _validate_checkpoint_dataset_matches_model(config, dataloaders)
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)

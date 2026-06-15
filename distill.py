@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 @hydra.main(
     version_base=None,
     config_path="src/configs",
-    config_name="distill_soft_tokens_gm_10k_seq256_n256_local_bpe_1024",
+    config_name="distill_soft_tokens_os_gumbel64_matched_local_bpe_1024",
 )
 def main(config):
     run_distillation(config)

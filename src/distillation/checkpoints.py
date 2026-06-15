@@ -9,6 +9,16 @@ from src.distillation.parameterizations import FullSoftTokenDataset
 from src.utils.io_utils import ROOT_PATH
 
 
+def _set_eval_for_snapshot(module):
+    was_training = module.training
+    module.eval()
+    return was_training
+
+
+def _restore_training_mode(module, was_training):
+    module.train(was_training)
+
+
 def save_checkpoint(
     save_dir,
     step,
@@ -20,30 +30,48 @@ def save_checkpoint(
     decoded_name="decoded_samples.txt",
     plain_name="decoded_samples_plain.txt",
     synthetic_logits=None,
+    input_probs=None,
     target_probs=None,
     hard_tokens=None,
     synthetic_state_dict=None,
     tokenizer=None,
     embedding_weight=None,
 ):
-    with torch.no_grad():
-        if (
-            synthetic_logits is None
-            and target_probs is None
-            and isinstance(synthetic_data, FullSoftTokenDataset)
-        ):
-            synthetic_logits = synthetic_data.logits.detach().cpu()
-        if synthetic_logits is None and target_probs is None:
-            target_probs = synthetic_data.token_probs(
-                embedding_weight=embedding_weight,
-            ).detach().cpu()
-        if hard_tokens is None:
-            hard_tokens = synthetic_data.hard_tokens(embedding_weight).detach().cpu()
-        if synthetic_state_dict is None:
-            synthetic_state_dict = {
-                key: value.detach().cpu()
-                for key, value in synthetic_data.state_dict().items()
-            }
+    was_training = _set_eval_for_snapshot(synthetic_data)
+    try:
+        with torch.no_grad():
+            if (
+                input_probs is None
+                and getattr(synthetic_data, "uses_decoupled_inputs", False)
+            ):
+                input_probs = synthetic_data.input_probs(
+                    embedding_weight=embedding_weight,
+                ).detach().cpu()
+            if (
+                target_probs is None
+                and getattr(synthetic_data, "uses_decoupled_targets", False)
+            ):
+                target_probs = synthetic_data.target_probs(
+                    embedding_weight=embedding_weight,
+                ).detach().cpu()
+            if (
+                synthetic_logits is None
+                and isinstance(synthetic_data, FullSoftTokenDataset)
+            ):
+                synthetic_logits = synthetic_data.logits.detach().cpu()
+            if synthetic_logits is None and target_probs is None:
+                target_probs = synthetic_data.token_probs(
+                    embedding_weight=embedding_weight,
+                ).detach().cpu()
+            if hard_tokens is None:
+                hard_tokens = synthetic_data.hard_tokens(embedding_weight).detach().cpu()
+            if synthetic_state_dict is None:
+                synthetic_state_dict = {
+                    key: value.detach().cpu()
+                    for key, value in synthetic_data.state_dict().items()
+                }
+    finally:
+        _restore_training_mode(synthetic_data, was_training)
 
     checkpoint = {
         "step": step,
@@ -62,6 +90,8 @@ def save_checkpoint(
     }
     if synthetic_logits is not None:
         checkpoint["synthetic_logits"] = synthetic_logits
+    if input_probs is not None:
+        checkpoint["input_probs"] = input_probs
     if target_probs is not None:
         checkpoint["target_probs"] = target_probs
     torch.save(checkpoint, save_dir / checkpoint_name)
@@ -102,23 +132,43 @@ def prepare_save_dir(config):
 
 
 def snapshot_synthetic_data(synthetic_data, embedding_weight):
-    with torch.no_grad():
-        snapshot = {
-            "hard_tokens": (
-                synthetic_data.hard_tokens(embedding_weight).detach().cpu().clone()
-            ),
-            "synthetic_state_dict": {
-                key: value.detach().cpu().clone()
-                for key, value in synthetic_data.state_dict().items()
-            },
-        }
-        if isinstance(synthetic_data, FullSoftTokenDataset):
-            snapshot["synthetic_logits"] = synthetic_data.logits.detach().cpu().clone()
-        else:
-            snapshot["target_probs"] = (
-                synthetic_data.token_probs(embedding_weight=embedding_weight)
-                .detach()
-                .cpu()
-                .clone()
-            )
-    return snapshot
+    was_training = _set_eval_for_snapshot(synthetic_data)
+    try:
+        with torch.no_grad():
+            snapshot = {
+                "hard_tokens": (
+                    synthetic_data.hard_tokens(embedding_weight).detach().cpu().clone()
+                ),
+                "synthetic_state_dict": {
+                    key: value.detach().cpu().clone()
+                    for key, value in synthetic_data.state_dict().items()
+                },
+            }
+            if isinstance(synthetic_data, FullSoftTokenDataset):
+                snapshot["synthetic_logits"] = (
+                    synthetic_data.logits.detach().cpu().clone()
+                )
+            if getattr(synthetic_data, "uses_decoupled_inputs", False):
+                snapshot["input_probs"] = (
+                    synthetic_data.input_probs(embedding_weight=embedding_weight)
+                    .detach()
+                    .cpu()
+                    .clone()
+                )
+            if getattr(synthetic_data, "uses_decoupled_targets", False):
+                snapshot["target_probs"] = (
+                    synthetic_data.target_probs(embedding_weight=embedding_weight)
+                    .detach()
+                    .cpu()
+                    .clone()
+                )
+            elif not isinstance(synthetic_data, FullSoftTokenDataset):
+                snapshot["target_probs"] = (
+                    synthetic_data.token_probs(embedding_weight=embedding_weight)
+                    .detach()
+                    .cpu()
+                    .clone()
+                )
+        return snapshot
+    finally:
+        _restore_training_mode(synthetic_data, was_training)

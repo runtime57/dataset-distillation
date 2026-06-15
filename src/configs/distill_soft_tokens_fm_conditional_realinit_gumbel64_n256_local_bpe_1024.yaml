@@ -1,0 +1,74 @@
+defaults:
+  - model: tiny_transformer_lm_local_bpe_1024
+  - datasets: tinystories_local_bpe_1024
+  - dataloader: language_modeling
+  - transforms: none
+  - _self_
+
+model:
+  max_seq_len: 256
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  dim_feedforward: 512
+  dropout: 0.0
+
+datasets:
+  train:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 10000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+  val:
+    sequence_length: ${model.max_seq_len}
+    max_texts: 3000
+    max_sequences: null
+    local_text_path: "data/tinystories_train_15k.txt"
+
+dataloader:
+  batch_size: 8
+
+distillation:
+  seed: 1
+  device: auto
+  run_name: "distill_fm_conditional_realinit_gumbel64_n256_g16_s200"
+  save_dir: "saved/conditional_text"
+  override: true
+  objective: feature_matching
+  n_steps: 200
+  log_step: 10
+  save_period: 50
+  save_step_checkpoints: false
+  real_split: "train"
+  outer_batches: 1
+  conditional_matching:
+    enabled: true
+    num_groups: 16
+    group_method: prefix_hash
+    prefix_length: 8
+    token_offset: 0
+    synthetic_group_method: init_prefix_hash
+    groups_per_step: 4
+    real_batch_size: 4
+    synth_batch_size: 4
+  inner_lr: 0.001
+  learn_inner_lr: false
+  min_inner_lr: null
+  max_inner_lr: null
+  entropy_weight: 0.0
+  max_grad_norm: 1.0
+  synthetic:
+    num_sequences: 256
+    sequence_length: ${model.max_seq_len}
+    vocab_size: ${model.vocab_size}
+    batch_size: 16
+    temperature: 1.0
+    gradient_temperature: 2.0
+    init_std: 0.02
+    init_from_real: true
+    init_confidence: 12.5
+    parameterization: topk_gumbel
+    topk: 64
+  optimizer:
+    _target_: torch.optim.Adam
+    lr: 0.003

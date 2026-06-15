@@ -120,18 +120,22 @@ class TinyTransformerLM(nn.Module):
         input_ids=None,
         input_embeds=None,
         target_probs=None,
+        input_probs=None,
         attention_mask=None,
         return_hidden_states=False,
         **batch,
     ):
         if input_embeds is None:
-            if target_probs is not None:
-                input_embeds = target_probs @ self.token_embedding.weight
-            elif input_ids is not None:
+            if input_ids is not None:
                 input_embeds = self.token_embedding(input_ids)
+            elif input_probs is not None:
+                input_embeds = input_probs @ self.token_embedding.weight
+            elif target_probs is not None:
+                input_embeds = target_probs @ self.token_embedding.weight
             else:
                 raise ValueError(
-                    "TinyTransformerLM expects input_ids, target_probs, or input_embeds."
+                    "TinyTransformerLM expects input_ids, input_probs, "
+                    "target_probs, or input_embeds."
                 )
 
         batch_size, seq_len, _ = input_embeds.shape

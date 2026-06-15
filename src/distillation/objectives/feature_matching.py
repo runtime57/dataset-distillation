@@ -1,5 +1,6 @@
 import torch
 
+from src.distillation.data import synthetic_batch
 from src.distillation.utils import move_batch_to_device
 
 
@@ -86,3 +87,101 @@ def feature_matching_loss(model, real_loader, synth_batch, outer_batches, device
         )
         for layer_index in range(n_layers)
     )
+
+
+def _real_feature_stats(model, batches):
+    n_layers = None
+    real_sums = None
+    real_counts = None
+
+    with torch.no_grad():
+        for real_batch in batches:
+            real_attention_mask = real_batch.get("attention_mask")
+            outputs = model(
+                input_ids=real_batch["input_ids"],
+                attention_mask=real_attention_mask,
+                return_hidden_states=True,
+            )
+            hidden_states = outputs["hidden_states"]
+
+            if real_sums is None:
+                n_layers = len(hidden_states)
+                real_sums = []
+                real_counts = []
+                for hidden in hidden_states:
+                    hidden_sum, count = _hidden_position_sum_and_count(
+                        hidden,
+                        real_attention_mask,
+                    )
+                    real_sums.append(hidden_sum)
+                    real_counts.append(count)
+            else:
+                for layer_index in range(n_layers):
+                    hidden_sum, count = _hidden_position_sum_and_count(
+                        hidden_states[layer_index],
+                        real_attention_mask,
+                    )
+                    real_sums[layer_index] = real_sums[layer_index] + hidden_sum
+                    real_counts[layer_index] = real_counts[layer_index] + count
+
+    return real_sums, real_counts
+
+
+def grouped_feature_matching_loss(
+    model,
+    group_matcher,
+    synthetic_data,
+    model_params,
+    outer_batches,
+    device,
+):
+    total = torch.tensor(0.0, device=device)
+    group_ids = group_matcher.sample_groups(group_matcher.groups_per_step)
+
+    for group_id in group_ids:
+        real_batches = [
+            group_matcher.sample_real_batch(
+                group_id,
+                group_matcher.real_batch_size,
+                device,
+            )
+            for _ in range(outer_batches)
+        ]
+        real_sums, real_counts = _real_feature_stats(model, real_batches)
+        real_means = [
+            hidden_sum / count.clamp_min(1.0).unsqueeze(-1)
+            for hidden_sum, count in zip(real_sums, real_counts)
+        ]
+        real_valid_positions = [count > 0 for count in real_counts]
+
+        synth_indices = group_matcher.sample_synthetic_indices(
+            group_id,
+            group_matcher.synth_batch_size,
+            device,
+        )
+        synth_batch_data = synthetic_batch(
+            synthetic_data=synthetic_data,
+            model_params=model_params,
+            batch_size=None,
+            device=device,
+            indices=synth_indices,
+        )
+        synth_outputs = model(
+            input_embeds=synth_batch_data["input_embeds"],
+            attention_mask=synth_batch_data["attention_mask"],
+            return_hidden_states=True,
+        )
+        synth_hidden_states = synth_outputs["hidden_states"]
+        total = total + sum(
+            _position_mse(
+                real_means[layer_index],
+                _masked_position_mean(
+                    synth_hidden_states[layer_index],
+                    synth_batch_data.get("attention_mask"),
+                )[0],
+                real_valid_positions[layer_index],
+            )
+            for layer_index in range(len(synth_hidden_states))
+        )
+
+    return total / len(group_ids)

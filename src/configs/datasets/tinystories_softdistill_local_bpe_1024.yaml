@@ -3,6 +3,7 @@ train:
   checkpoint_path: null
   temperature: 1.0
   max_sequences: null
+  use_hard_inputs: false
 
 val:
   _target_: src.datasets.TinyStoriesLocalBPEDataset

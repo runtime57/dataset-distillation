@@ -107,9 +107,11 @@ saved/
 wandb/
 .cometml-runs/
 outputs/
+.hydra/
 
 # editor, os cache directory
 .vscode/
 .idea/
 __MACOSX/
+.DS_Store
 artifacts/

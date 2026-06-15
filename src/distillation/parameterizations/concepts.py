@@ -108,6 +108,59 @@ class ConceptSoftTokenDataset(BaseSyntheticTokenDataset):
             )
             self.mixture_logits.add_(torch.randn_like(self.mixture_logits) * 0.01)
 
+    def initialize_random_norm(
+        self,
+        embedding_weight,
+        input_ids=None,
+        confidence=5.0,
+    ):
+        if input_ids is not None and input_ids.shape != (
+            self.num_sequences,
+            self.sequence_length,
+        ):
+            raise ValueError(
+                "Expected input_ids shape "
+                f"{(self.num_sequences, self.sequence_length)}, got "
+                f"{tuple(input_ids.shape)}."
+            )
+        with torch.no_grad():
+            if input_ids is None:
+                concept_tokens = torch.randint(
+                    embedding_weight.shape[0],
+                    (self.num_concepts,),
+                    device=embedding_weight.device,
+                )
+            else:
+                flat_tokens = input_ids.reshape(-1)
+                concept_tokens = flat_tokens[: self.num_concepts]
+                if concept_tokens.numel() < self.num_concepts:
+                    repeat_count = math.ceil(self.num_concepts / flat_tokens.numel())
+                    concept_tokens = flat_tokens.repeat(repeat_count)[
+                        : self.num_concepts
+                    ]
+
+            norms = embedding_weight[concept_tokens].norm(dim=-1, keepdim=True)
+            random_vectors = torch.randn_like(self.concept_vectors)
+            random_vectors = random_vectors / random_vectors.norm(
+                dim=-1,
+                keepdim=True,
+            ).clamp_min(1e-12)
+            self.concept_vectors.copy_(random_vectors * norms)
+
+            total_positions = self.num_sequences * self.sequence_length
+            flat_concept_ids = torch.arange(
+                total_positions,
+                device=embedding_weight.device,
+            )
+            flat_concept_ids = flat_concept_ids.remainder(self.num_concepts)
+            self.mixture_logits.zero_()
+            self.mixture_logits.view(-1, self.num_concepts).scatter_(
+                -1,
+                flat_concept_ids.unsqueeze(-1),
+                confidence,
+            )
+            self.mixture_logits.add_(torch.randn_like(self.mixture_logits) * 0.01)
+
     def initialize_from_kmeans(self, embedding_weight, confidence=5.0, n_iter=100):
         """Initialize concept vectors via K-means on token embeddings."""
         with torch.no_grad():
@@ -234,6 +287,59 @@ class SequenceConceptSoftTokenDataset(BaseSyntheticTokenDataset):
         with torch.no_grad():
             self.concept_vectors.copy_(embedding_weight[concept_tokens])
             self.concept_vectors.add_(torch.randn_like(self.concept_vectors) * 0.01)
+
+            self.mixture_logits.zero_()
+            self.mixture_logits.scatter_(
+                -1,
+                position_concept_ids.view(1, self.sequence_length, 1).expand(
+                    self.num_sequences, -1, -1
+                ),
+                confidence,
+            )
+            self.mixture_logits.add_(torch.randn_like(self.mixture_logits) * 0.01)
+
+    def initialize_random_norm(
+        self,
+        embedding_weight,
+        input_ids=None,
+        confidence=5.0,
+    ):
+        if input_ids is not None and input_ids.shape != (
+            self.num_sequences,
+            self.sequence_length,
+        ):
+            raise ValueError(
+                "Expected input_ids shape "
+                f"{(self.num_sequences, self.sequence_length)}, got "
+                f"{tuple(input_ids.shape)}."
+            )
+        device = embedding_weight.device
+        source_positions = torch.div(
+            torch.arange(self.num_concepts, device=device) * self.sequence_length,
+            self.num_concepts,
+            rounding_mode="floor",
+        ).clamp(max=self.sequence_length - 1)
+        position_concept_ids = torch.div(
+            torch.arange(self.sequence_length, device=device) * self.num_concepts,
+            self.sequence_length,
+            rounding_mode="floor",
+        ).clamp(max=self.num_concepts - 1)
+        with torch.no_grad():
+            if input_ids is None:
+                concept_tokens = torch.randint(
+                    embedding_weight.shape[0],
+                    (self.num_sequences, self.num_concepts),
+                    device=device,
+                )
+            else:
+                concept_tokens = input_ids[:, source_positions]
+            norms = embedding_weight[concept_tokens].norm(dim=-1, keepdim=True)
+            random_vectors = torch.randn_like(self.concept_vectors)
+            random_vectors = random_vectors / random_vectors.norm(
+                dim=-1,
+                keepdim=True,
+            ).clamp_min(1e-12)
+            self.concept_vectors.copy_(random_vectors * norms)
 
             self.mixture_logits.zero_()
             self.mixture_logits.scatter_(
