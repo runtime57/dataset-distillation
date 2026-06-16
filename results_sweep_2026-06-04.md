@@ -19,7 +19,7 @@ the saved distillation model config before filtering.
 
 | bucket | count | decision |
 |---|---:|---|
-| synthetic, model-matched, canonical `n=256/seq=256` | 95 | main comparable pool |
+| synthetic, model-matched, canonical `n=256/seq=256` | 98 | main comparable pool |
 | real baselines, canonical model | 3 | baseline/control only |
 | model-matched but `n=512` | 4 | excluded from current `n=256` table |
 | eval/distill matched each other but non-canonical model | 8 | excluded |
@@ -82,9 +82,29 @@ net hard-token changes from the coreset.
 |---:|---:|---:|---|---|---|
 | 41.116 | 43.109 | 4 | `eval_msadamw_support_accept_coreset_hardforward_conf125_s5` | `multi_step_adamw`, `topk_gumbel64`, hard_forward, coreset init, support-search accept, 5 steps | lr=0.0035, wd=1.1, gamma=0.92, hard inputs |
 
+## 2026-06-16 Conditional GM Initialization Probe
+
+These runs test the text-side analogue of the MNIST random/real-init sanity
+check. All rows are teacher-free, canonical model, `n=256`, `max_seq_len=256`,
+`topk_gumbel64`, conditional prefix-hash GM with 16 groups, and 200 distillation
+steps. Eval uses the matched soft-distill config; the checkpoints contain
+`target_probs` and `hard_tokens`, so the model trains on the default
+soft-input/soft-target path.
+
+| test PPL | val PPL | epoch | run | synthetic init | distill proxy |
+|---:|---:|---:|---|---|---|
+| 43.482 | 45.695 | 4 | `eval_condgm_realinit1_gumbel64_n256_g16_s200_best_softinput` | one real sequence per synthetic sequence | best inner `0.416994` @ step 134, entropy `0.003` |
+| 299.918 | 311.603 | 6 | `eval_condgm_realmix_gumbel64_n256_g16_s200_best_softinput` | mixture over real sequences by position, eps `1e-4` | best inner `0.500923` @ step 133, entropy `3.496` |
+| 780.794 | 789.552 | 2 | `eval_condgm_random_gumbel64_n256_g16_s200_best_softinput` | random logits | best inner `0.890446` @ step 196, entropy `4.157` |
+
+Takeaway: real initialization is still the only useful option here. The simple
+many-real-text mixture improves the distillation proxy over random, but its
+eval PPL stays hundreds because averaging many contexts destroys the local
+sequence structure instead of producing a compressed text dataset.
+
 ## In-Scope Synthetic Results
 
-Sorted by test PPL. This is the useful band of the 95 valid canonical rows;
+Sorted by test PPL. This is the useful band of the 98 valid canonical rows;
 the remaining valid rows are lower-quality smoke/random/concepts runs and do
 not change the current best.
 
